@@ -1,0 +1,21 @@
+services:
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+    networks:
+      - backend
+  
+  auth-service:
+    build: ./auth-service
+    expose:
+      - "8081"
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: backend
+    driver: bridge
