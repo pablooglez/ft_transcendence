@@ -4,5 +4,5 @@ import { registerController, loginController, validateController } from "../cont
 export default async function authRoutes(app: FastifyInstance) {
     app.post("/login", loginController);
     app.post("/register", registerController);
-    app.post("/validate", validateController);
+    app.get("/validate", validateController);
 }

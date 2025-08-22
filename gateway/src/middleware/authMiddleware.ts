@@ -19,9 +19,8 @@ export async function authMiddleware(req: FastifyRequest, reply: FastifyReply) {
 
     try {
         const response = await fetch("http://auth-service:8081/validate", {
-            method: "POST",
+            method: "GET",
             headers: {
-                "Content-Type": "application/json",
                 "Authorization": authHeader
             }
         });

@@ -24,10 +24,14 @@ export async function loginController(req: FastifyRequest, reply: FastifyReply) 
 }
 
 export async function validateController(req: FastifyRequest, reply: FastifyReply) {
-    const { token } = req.body as { token: string };
+    const authHeader = req.headers["authorization"];
+    const token = authHeader?.split(" ")[1];
 
     try {
-        const user = validateToken(token);
+        console.log("Auth header:", authHeader);
+        console.log("Auth header parts:", authHeader?.split(" "));
+        console.log("Extracted token:", token);
+        const user = validateToken(token || "");
         return reply.send({ valid: true, user });
     } catch (err: any) {
         const code = err.message === "Token is required" ? 400 : 401;
