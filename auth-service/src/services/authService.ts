@@ -1,6 +1,9 @@
 import bcrypt from "bcrypt";
 import { createUser, findUser } from "../repositories/userRepository";
-import { generateAccessToken } from "./tokenService"
+import { RefreshTokenRepository } from "../repositories/refreshTokenRepository";
+import { generateAccessToken, generateRefreshToken } from "./tokenService";
+
+const refreshTokenRepo = new RefreshTokenRepository();
 
 export async function registerUser(username: string, password: string) {
     const user = findUser(username);
@@ -23,8 +26,11 @@ export async function loginUser(username: string, password: string) {
         throw new Error("Invalid username or password");
 
     const token = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-    return { token };
+    refreshTokenRepo.add(user.id, refreshToken);
+
+    return { token, refreshToken };
 }
 
 export async function logoutUser() {
