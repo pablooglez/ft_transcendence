@@ -39,5 +39,17 @@ app.get("/health", async () => {
 
 const PORT = process.env.PORT || 8080;
 
-app.listen({ port: Number(PORT), host: "0.0.0.0" })
-    .then(() => console.log(`Server running on port ${PORT}`));
+const listeners = ['SIGINT', 'SIGTERM'];
+listeners.forEach((signal) => {
+    process.on(signal, async () => {
+        await app.close();
+        process.exit(0);
+    })
+});
+
+async function main() {
+    await app.listen({ port: Number(PORT), host: "0.0.0.0" })
+        .then(() => console.log(`Server running on port ${PORT}`));
+}
+
+main()
