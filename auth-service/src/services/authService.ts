@@ -33,6 +33,6 @@ export async function loginUser(username: string, password: string) {
     return { token, refreshToken };
 }
 
-export async function logoutUser() {
-    
+export function logoutUser(refreshToken: string) {
+    refreshTokenRepo.delete(refreshToken);
 }
