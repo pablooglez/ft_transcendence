@@ -12,7 +12,6 @@ app.register(authRoutes);
 
 app.register(cookie, {
     secret: process.env.COOKIE_SECRET || "supersecret2",
-    hook: 'onRequest',
     parseOptions: {}
 });
 
