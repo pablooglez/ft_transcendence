@@ -1,3 +1,12 @@
+// target so the compiler generates code compatible with standard modern languages
+// module next y node no use the latest syntax node.js
+// esModuleImport improved compatibility
+// strict to check all the bugs
+// skipLibCheck speed ups .d.ts compilation
+// sourceMap debugging tool
+// declaration to produce .d.ts
+// ignoreDeprecations so VS dont show a warning
+
 {
   "compilerOptions": {
     "target": "ES2020",
