@@ -1,38 +1,28 @@
 /**
  * @file gameControllers.ts
- * @brief Import io to use socket.IO server and sockets, the the gameService and the PaddleSide
+ * @brief Import FastifyInstance to use its server, the the gameService and the PaddleSide
  */
+import { FastifyInstance } from "fastify";
+import { getGameState, resetGame } from "../services/gameServices";
+import { Server } from "socket.io";
 
-import { Server , Socket } from "socket.io";
-import * as gameService from "../services/gameServices";
-import { PaddleSide } from "../";
-
-/**
- * @brief register the player status and the paddle movement
- * Some logs to check the connection
- * calls to the movement methods for the paddles
- * actualizes the gameState with each movement
- */
-export function registerGameHandlers(io: Server, socket: Socket)
+export async function gameController(fastify: FastifyInstance, io: Server)
 {
-  console.log("Player connected:", socket.id);
-
-  socket.emit("paddles", gameService.getGameState());
-
-  socket.on("moveUp", (side: PaddleSide) =>
+	/**
+	 * POST to init the game after reset
+	 */
+	fastify.post("/game/init", async () =>
 	{
-    	gameService.moveUp(side);
-    	io.emit("paddles", gameService.getGameState());
+		const state = resetGame();
+		io.emit("paddles", state); // notify clients
+		return { message: "Game initialized", state };
 	});
 
-  socket.on("moveDown", (side: PaddleSide) =>
+	/**
+	 * GET to get the current state of the game
+	 */
+	fastify.get("/game/state", async () =>
 	{
-		gameService.moveDown(side);
-		io.emit("paddles", gameService.getGameState());
-	});
-
-  socket.on("disconnect", () =>
-	{
-		console.log("Player disconnected:", socket.id);
+		return getGameState();
 	});
 }
