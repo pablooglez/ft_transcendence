@@ -66,9 +66,12 @@ io.on("connection", (socket) =>
 	});
 });
 
-// Start server
+/** 
+ * Start server and listen to all connections even from outside the container
+*/
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () =>
+server.listen(PORT, '0.0.0.0',() =>
 {
 	console.log(`Pong server running at http://localhost:${PORT}`);
 });

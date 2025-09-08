@@ -7,6 +7,9 @@
         "build": "vite build",
         "preview": "vite preview"
     },
+   "dependencies": {
+    "socket.io-client": "^4.7.5"
+  },
   "devDependencies": {
     "tsx": "^4.20.4"
   }

@@ -2,6 +2,7 @@ import { router } from "./router";
 import { registerHandlers } from "./pages/register"
 import { loginHandlers } from "./pages/login"
 import { homeText } from "./pages/home"
+import { pongHandlers } from "./pages/pong";
 
 function render() {
     const app = document.getElementById("app")!;
@@ -22,6 +23,9 @@ function render() {
         registerHandlers();
     if (location.hash === "#/login")
         loginHandlers();
+	if (location.hash === "#/pong") {
+        pongHandlers();
+    }
     if (location.hash === "" || location.hash === "#/" || location.hash === "#/home") {
         import("./pages/home").then(mod => mod.handleStars());
     }
