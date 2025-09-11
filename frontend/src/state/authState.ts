@@ -1,0 +1,45 @@
+let accessToken: string | null = null;
+
+export function setAccessToken(token: string) {
+    accessToken = token;
+}
+
+export function getAccessToken(): string | null {
+    return (accessToken);
+}
+
+export function isLoggedIn(): boolean {
+    return (accessToken !== null);
+}
+
+export function clearAuth() {
+    accessToken = null;
+}
+
+export async function refreshAccessToken(): Promise<boolean> {
+
+    try {
+        const res = await fetch("http://localhost:8080/auth/refresh", {
+            method: "POST",
+            credentials: "include",
+        });
+    
+    if (!res.ok) {
+        console.log("Entra");
+        clearAuth();
+        return (false);
+    }
+
+    const data = await res.json();
+    if (data.accessToken) {
+        setAccessToken(data.accessToken);
+        return (true);
+    }
+
+    clearAuth();
+    return (false);
+    } catch (err) {
+        clearAuth();
+        return (false);
+    }
+}

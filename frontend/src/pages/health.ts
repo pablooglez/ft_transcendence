@@ -1,3 +1,5 @@
+import { getAccessToken } from "../state/authState"
+
 export function Health(): string {
     return `
         <h1>Gateway Health</h1>
@@ -11,7 +13,7 @@ export function healthHandlers() {
     const button = document.getElementById("check-health")!;
 
     async function updateHealth() {
-        const token = localStorage.getItem("accessToken");
+        const token = getAccessToken();
         try {
             const res = await fetch("http://localhost:8080/health", {
                 headers: { "Authorization": `Bearer ${token}` }

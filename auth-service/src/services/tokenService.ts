@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken"
 import { RefreshTokenRepository } from "../repositories/refreshTokenRepository"
+import { v4 as uuid } from "uuid";
 
 export function generateAccessToken(user: { id: number; username: string; }) {
     return jwt.sign(
@@ -11,7 +12,7 @@ export function generateAccessToken(user: { id: number; username: string; }) {
 
 export function generateRefreshToken(user: { id: number; username: string }) {
     return jwt.sign(
-        { id: user.id, username: user.username },
+        { id: user.id, username: user.username, jti: uuid() },
     process.env.REFRESH_SECRET as string,
     { expiresIn: "7d" }
     );
@@ -22,11 +23,13 @@ export function verifyRefreshToken(token: string) {
         const decoded = jwt.verify(token, process.env.REFRESH_SECRET as string) as {
             id: string;
             username: string;
+            jti: string;
         };
 
         return {
             id: parseInt(decoded.id, 10),
             username: decoded.username,
+            jti: decoded.jti,
         };
     } catch (err) {
         throw new Error("Invalid or expired refresh token")
@@ -43,11 +46,19 @@ export function rotateTokens(refreshToken: string) {
         throw new Error("Invalid refresh token");
     }
 
+    if (!refreshTokenRepo.isValid(refreshToken)) {
+        refreshTokenRepo.delete(refreshToken);
+        throw new Error("Expired token");
+    }
+
     const newAccessToken = generateAccessToken({ username: decoded.username, id: decoded.id });
     const newRefreshToken = generateRefreshToken({ username: decoded.username, id: decoded.id });
 
-    refreshTokenRepo.delete(refreshToken);
+    const gracePeriodMs = 30 * 1000;
+    refreshTokenRepo.updateGracePeriod(refreshToken, Date.now() + gracePeriodMs);
+
     refreshTokenRepo.add(decoded.id, newRefreshToken);
+    //refreshTokenRepo.cleanupOldTokens();
 
     return { newAccessToken, newRefreshToken };
 }

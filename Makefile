@@ -8,3 +8,5 @@ down:
 
 clean:
 	docker system prune -a
+
+re: down clean

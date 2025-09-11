@@ -1,3 +1,5 @@
+import { getAccessToken, setAccessToken, clearAuth, isLoggedIn } from "../state/authState"
+
 export function Login(): string {
   return `
     <h1>Login</h1>
@@ -17,8 +19,7 @@ export function loginHandlers() {
   const logoutBtn = document.querySelector<HTMLButtonElement>("#logout-btn")!;
 
   // Check if user is already logged in
-  const existingToken = localStorage.getItem("accessToken");
-  if (existingToken) {
+  if (isLoggedIn()) {
     result.textContent = "✅ You are already logged in";
     form.style.display = "none"; // hide login form
     logoutBtn.style.display = "block"; // show logout button
@@ -41,7 +42,7 @@ export function loginHandlers() {
       const data = await res.json();
 
       if (res.ok && data.accessToken) {
-        localStorage.setItem("accessToken", data.accessToken);
+        setAccessToken(data.accessToken);
         result.textContent = `✅ Logged in as ${username}`;
         form.style.display = "none";
         logoutBtn.style.display = "block";
@@ -55,11 +56,15 @@ export function loginHandlers() {
 
   logoutBtn.onclick = async () => {
     try {
+      const token = getAccessToken();
       await fetch("http://localhost:8080/auth/logout", {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
         credentials: "include",
       });
-      localStorage.removeItem("accessToken");
+      clearAuth();
       result.textContent = "⚠️ Logged out successfully";
       form.style.display = "block";
       logoutBtn.style.display = "none";

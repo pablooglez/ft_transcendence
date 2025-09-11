@@ -35,7 +35,7 @@ export async function loginController(req: FastifyRequest, reply: FastifyReply) 
 }
 
 export async function refreshController(req: FastifyRequest, reply: FastifyReply) {
-    const refreshToken = req.cookies.refresh;
+    const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
         return reply.code(400).send({ error: "Refresh token is required" });
@@ -62,10 +62,15 @@ export async function refreshController(req: FastifyRequest, reply: FastifyReply
 }
 
 export async function logoutController(req: FastifyRequest, reply: FastifyReply) {
-    const refreshToken = req.cookies.refreshToken;
+    let refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-        return reply.code(400).send({ error: "Refresh token is required" });
+        const authHeader = req.headers["authorization"];
+        if (authHeader?.startsWith("Bearer ")) {
+            refreshToken = authHeader.split(" ")[1].trim();
+        }
+        else
+            return reply.code(400).send({ error: "Refresh token is required" });
     }
 
     try {

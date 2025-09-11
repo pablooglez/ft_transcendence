@@ -1,24 +1,29 @@
 export function Home(): string {
     return `
         <div class="home-page">
+        <h1>Characteristics</h1>
         <div class="card-flex">
-            <div>
+        <div>
             <div class="card">
-                <h2>Card Title 1</h2>
+                <h2>Tournament</h2>
+                <p class="p-emoji">🏆</p>
                 <p>This is the first card's content.</p>
             </div>
             <div class="card">
-                <h2>Card Title 2</h2>
+                <h2>2FA & JWT</h2>
+                <p class="p-emoji">🛡️</p>
                 <p>This is the second card's content.</p>
             </div>
             </div>
             <div>
             <div class="card">
-                <h2>Card Title 3</h2>
+                <h2>Microservices</h2>
+                <p class="p-emoji">🐳</p>
                 <p>This is the third card's content.</p>
             </div>
             <div class="card">
-                <h2>Card Title 1</h2>
+                <h2>AI Opponent</h2>
+                <p class="p-emoji">🤖</p>
                 <p>This is the first card's content.</p>
             </div>
             </div>

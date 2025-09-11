@@ -23,4 +23,26 @@ export class RefreshTokenRepository {
     deleteAllForUser(userId: number): void {
         db.prepare("DELETE FROM refresh_tokens WHERE user_id = ?").run(userId);
     }
+
+    updateGracePeriod(token: string, graceUntil: number) {
+        db.prepare("UPDATE refresh_tokens SET grace_until = ? WHERE token = ?").run(new Date(graceUntil).toISOString(), token);
+    }
+
+    isValid(token: string) {
+        const stmt = db.prepare("SELECT * FROM refresh_tokens WHERE token = ?");
+        const row = stmt.get(token);
+        if (!row)
+            return (false);
+
+        if (!row.grace_until)
+            return (true);
+
+        const graceUntil = new Date(row.grace_until).getTime();
+        return Date.now() <= graceUntil;
+    }
+
+    cleanupOldTokens() {
+        const now = new Date().toISOString();
+        db.prepare("DELETE FROM refresh_tokens WHERE grace_until IS NOT NULL AND grace_until <= ?").run(now);
+    }
 }
