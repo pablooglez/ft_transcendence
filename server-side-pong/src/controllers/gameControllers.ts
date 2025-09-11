@@ -9,7 +9,7 @@ import { Server } from "socket.io";
 /**
  * runtime flag to pause the game 
  */
-let isPaused = false;
+export let isPaused = false;
 
 export async function gameController(fastify: FastifyInstance, io: Server)
 {
@@ -20,7 +20,7 @@ export async function gameController(fastify: FastifyInstance, io: Server)
 	fastify.post("/game/init", async () =>
 	{
 		const state = resetGame();
-		isPaused = false;
+		isPaused = true;
 		io.emit("gameState", state);
 		return { message: "Game initialized", state };
 	});

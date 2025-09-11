@@ -2,46 +2,56 @@
  * @file gameServices.ts
  * @brief Core game state and logic for Pong
  */
-import { GameState, Paddle, Ball } from "../";
+import { GameState, Paddle, Ball } from "../utils/types.ts";
 
 /**
  * Constants
  */
-const FIELD_WIDTH = 600;
-const FIELD_HEIGHT = 400;
-const PADDLE_HEIGHT = 80;
-const PADDLE_WIDTH = 10;
-const PADDLE_SPEED = 20;
-const BALL_SPEED = 5;
+const FIELD_WIDTH = 800;
+const FIELD_HEIGHT = 600;
+const PADDLE_HEIGHT = 100;
+const PADDLE_WIDTH = 20;
+const PADDLE_SPEED = 10;
+const BALL_SPEED = 7;
+const PADDLE_LEFT_X = 30;
+const PADDLE_RIGHT_X = 750;
 
 /**
  * Game State setting
  */
-let gameState: GameState = resetGame();
+let gameState: GameState = createInitialState();
 
 /**
- *  Game API
- */ 
+¡ * @returns The current game state.
+ */
 export function getGameState(): GameState
 {
-	return gameState;
+    return gameState;
 }
 
 
 /**
- * 
- * @returns {GameState} a initial stting gamestate
+ * @returns {GameState} a initial setting gamestate
  */
 export function resetGame(): GameState
 {
-	gameState =
-	{
+	gameState = createInitialState();
+	return gameState;
+}
+
+/**
+ * Creates a fresh game state object.
+ * @returns A new GameState object.
+ */
+function createInitialState(): GameState
+{
+	return{
 		paddles:
 		{
 			left: { y: FIELD_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
 			right: { y: FIELD_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
 		},
-			ball:
+		ball:
 		{
 			x: FIELD_WIDTH / 2,
 			y: FIELD_HEIGHT / 2,
@@ -54,8 +64,8 @@ export function resetGame(): GameState
 			right: 0,
 		},
 	};
-	return gameState;
 }
+
 
 export function moveUp(side: "left" | "right"): GameState
 {
@@ -99,19 +109,21 @@ export function updateGame(): GameState
 	/**
 	 * Left Paddle
 	 */
-	if (ball.x <= PADDLE_WIDTH && ball.y >= leftPaddle.y && ball.y <= leftPaddle.y + PADDLE_HEIGHT)
+	if (ball.x <= PADDLE_LEFT_X + PADDLE_WIDTH && ball.y >= leftPaddle.y && ball.y <= leftPaddle.y + PADDLE_HEIGHT)
 	{
 		ball.vx *= -1;
-		ball.x = PADDLE_WIDTH; // weird but apparently to prevent sticking
+        // Prevent sticking by placing the ball just outside the paddle's face.
+        ball.x = PADDLE_LEFT_X + PADDLE_WIDTH + 1;
 	}
 
 	/**
 	 * Right Paddle
 	 */
-	if (ball.x >= FIELD_WIDTH - PADDLE_WIDTH && ball.y >= rightPaddle.y && ball.y <= rightPaddle.y + PADDLE_HEIGHT)
+    if (ball.x >= PADDLE_RIGHT_X && ball.y >= rightPaddle.y && ball.y <= rightPaddle.y + PADDLE_HEIGHT)
 	{
 		ball.vx *= -1;
-		ball.x = FIELD_WIDTH - PADDLE_WIDTH; // weird but apparently to prevent sticking
+        // Prevent sticking by placing the ball just outside the paddle's face.
+        ball.x = PADDLE_RIGHT_X - 1;
 	}
 
 	/**
