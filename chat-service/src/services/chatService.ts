@@ -2,6 +2,7 @@
 import * as conversationRepo from "../repositories/conversationRepository";
 import * as messageRepo from "../repositories/messageRepository";
 import * as blockRepo from "../repositories/blockRepository";
+import * as websocketService from "./websocketService";
 
 export async function sendMessage(senderId: number, recipientId: number, content: string, messageType: string = 'text') {
     // 1. Validate that users are not blocked
@@ -22,6 +23,23 @@ export async function sendMessage(senderId: number, recipientId: number, content
 
     // 4. Update conversation timestamp
     conversationRepo.updateConversationTimestamp(conversation.id);
+
+    // 5. Send real-time notification via WebSocket if recipient is connected
+    try {
+        const messageData = {
+            conversation_id: conversation.id,
+            sender_id: senderId,
+            content: content,
+            message_type: messageType || 'text',
+            timestamp: new Date().toISOString()
+        };
+        
+        websocketService.notifyNewMessage(senderId, recipientId, messageData);
+        console.log(`WebSocket notification sent to user ${recipientId} from user ${senderId}`);
+    } catch (wsError) {
+        // Don't fail the HTTP request if WebSocket notification fails
+        console.warn(`Failed to send WebSocket notification to user ${recipientId}:`, wsError);
+    }
 
     return { success: true, message: "Message sent successfully" };
 }
