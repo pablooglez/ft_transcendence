@@ -13,7 +13,7 @@ export function Chat(): string {
                 <div class="conversations-list" id="conversations-list">
                     <!-- Conversations will be loaded here dynamically -->
                     <div class="no-conversations">
-                        <p>Haz clic en ↻ para cargar conversaciones</p>
+                        <p>Click ↻ to load conversations</p>
                     </div>
                 </div>
             </div>
@@ -25,8 +25,8 @@ export function Chat(): string {
                     <div class="contact-info">
                         <div class="contact-avatar">👤</div>
                         <div class="contact-details">
-                            <h3 id="contact-name">Selecciona una conversación</h3>
-                            <span id="contact-status">En línea</span>
+                            <h3 id="contact-name">Select a conversation</h3>
+                            <span id="contact-status">Online</span>
                         </div>
                     </div>
                 </div>
@@ -35,8 +35,8 @@ export function Chat(): string {
                 <div class="messages-container" id="messages-container">
                     <div class="welcome-message">
                         <div class="welcome-icon">💬</div>
-                        <h3>Bienvenido al Chat</h3>
-                        <p>Selecciona una conversación o inicia una nueva para comenzar a chatear</p>
+                        <h3>Welcome to Chat</h3>
+                        <p>Select a conversation or start a new one to begin chatting.</p>
                     </div>
                 </div>
 
@@ -54,7 +54,7 @@ export function Chat(): string {
                             <input 
                                 type="text" 
                                 id="message-content" 
-                                placeholder="Escribe un mensaje..." 
+                                placeholder="Write a message..." 
                                 class="message-input"
                                 required 
                             />
