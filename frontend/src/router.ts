@@ -4,7 +4,7 @@ import { Register } from "./pages/register";
 import { Login } from "./pages/login";
 import { Health, healthHandlers } from "./pages/health";
 import { Ping } from "./pages/ping";
-import { Chat } from "./pages/chat";
+import { Chat, chatHandlers } from "./pages/chat";
 
 export function router(route: string): string {
     switch (route) {
@@ -20,6 +20,7 @@ export function router(route: string): string {
         case "#/ping":
             return Ping();
         case "#/chat":
+            setTimeout(chatHandlers, 0);
             return Chat();
         case "#/":
         default:
