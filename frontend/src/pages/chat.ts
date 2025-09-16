@@ -1,24 +1,70 @@
 export function Chat(): string {
     return `
-        <div class="chat-container">
-            <h1>Chat en Tiempo Real</h1>
-            
-            <!-- Sección para enviar mensajes -->
-            <div class="chat-section">
-                <h3>Enviar Mensaje</h3>
-                <form id="message-form">
-                    <input type="number" id="recipient-id" placeholder="ID del destinatario" required />
-                    <input type="text" id="message-content" placeholder="Escribe tu mensaje..." required />
-                    <button type="submit">Enviar</button>
-                </form>
-                <div id="message-result"></div>
+        <div class="whatsapp-container">
+            <!-- Left sidebar: Conversations list -->
+            <div class="conversations-sidebar">
+                <div class="sidebar-header">
+                    <h2>Chats</h2>
+                    <button id="load-conversations" class="refresh-btn">
+                        <span>↻</span>
+                    </button>
+                </div>
+                
+                <div class="conversations-list" id="conversations-list">
+                    <!-- Conversations will be loaded here dynamically -->
+                    <div class="no-conversations">
+                        <p>Haz clic en ↻ para cargar conversaciones</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Sección para ver conversaciones -->
-            <div class="chat-section">
-                <h3>Mis Conversaciones</h3>
-                <button id="load-conversations">Cargar Conversaciones</button>
-                <div id="conversations-list"></div>
+            <!-- Main chat area -->
+            <div class="chat-area">
+                <!-- Chat header -->
+                <div class="chat-header">
+                    <div class="contact-info">
+                        <div class="contact-avatar">👤</div>
+                        <div class="contact-details">
+                            <h3 id="contact-name">Selecciona una conversación</h3>
+                            <span id="contact-status">En línea</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages area -->
+                <div class="messages-container" id="messages-container">
+                    <div class="welcome-message">
+                        <div class="welcome-icon">💬</div>
+                        <h3>Bienvenido al Chat</h3>
+                        <p>Selecciona una conversación o inicia una nueva para comenzar a chatear</p>
+                    </div>
+                </div>
+
+                <!-- Message input area -->
+                <div class="message-input-area">
+                    <form id="message-form" class="message-form">
+                        <input 
+                            type="number" 
+                            id="recipient-id" 
+                            placeholder="ID destinatario" 
+                            class="recipient-input"
+                            required 
+                        />
+                        <div class="input-with-button">
+                            <input 
+                                type="text" 
+                                id="message-content" 
+                                placeholder="Escribe un mensaje..." 
+                                class="message-input"
+                                required 
+                            />
+                            <button type="submit" class="send-button">
+                                ➤
+                            </button>
+                        </div>
+                    </form>
+                    <div id="message-result" class="message-result"></div>
+                </div>
             </div>
         </div>
     `;
