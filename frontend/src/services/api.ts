@@ -18,3 +18,41 @@ export async function pingGateway(): Promise<string> {
         return "Gateway is unreachable";
     }
 }
+
+// Functions for Chat-Service
+export async function getConversations() {
+    try {
+        const token = getAccessToken();
+        const res = await fetch("http://localhost:8080/conversations", {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return await res.json();
+    } catch (err) {
+        console.error("Failed to get conversations:", err);
+        throw err;
+    }
+}
+
+export async function sendMessage(recipientId: number, content: string) {
+    try {
+        const token = getAccessToken();
+        const res = await fetch(`http://localhost:8080/conversations/1/messages`, {
+            method: 'POST',
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ recipientId, content })
+        });
+        if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return await res.json();
+    } catch (err) {
+        console.error("Failed to send message:", err);
+        throw err;
+    }
+}
