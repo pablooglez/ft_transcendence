@@ -3,14 +3,11 @@
  * @brief Pong server entrypoint
  */
 
-
 /**
  * Imports
  */
 import fastify from "fastify";
-import { createServer } from "http";
-import { Server, Socket } from "socket.io";
-import jwt from "jsonwebtoken";
+import websocket, { SocketStream } from "@fastify/websocket";
 import dotenv from "dotenv";
 import { gameController, isPaused } from "./controllers/gameControllers";
 import { getGameState, moveUp, moveDown, updateGame } from "./services/gameServices";
@@ -18,101 +15,92 @@ import { getGameState, moveUp, moveDown, updateGame } from "./services/gameServi
 dotenv.config();
 
 const app = fastify({ logger: true });
-const server = createServer(app.server);
-const io = new Server(server, { cors: { origin: "*" } });
 
 /**
- * Auth middleware for socker.io
- * executed for each client trying to connect
+ * map of player connections
+ * - ahora guarda directamente el WebSocket real (de "ws")
  */
-io.use((socket: Socket, next) =>
-{
-		const token = socket.handshake.auth.token;
+export const playerConnections = new Map<string, WebSocket>();
 
-		if (!token)
-		{
-			return next(new Error("Authentication error: No token provided."));
+// Registrar el plugin de WebSocket
+app.register(websocket);
+
+/**
+ * register the REST routes
+ */
+gameController(app);
+
+/**
+ * Define the websocket endpoint in the root /
+ */
+app.get("/", { websocket: true }, (connection: SocketStream, req) => {
+	// Gateway passses the player id in the header
+	const playerId = req.headers["x-player-id"] as string;
+	let clientId: string;
+
+	// Si no hay header -> se conecta como guest
+	if (!playerId) {
+		console.warn(
+			"Warning: Connection received without x-player-id header. This may indicate a direct call bypassing the gateway."
+		);
+		const guestId = `guest_${Math.random().toString(36).substring(2, 9)}`;
+		clientId = guestId;
+		playerConnections.set(clientId, connection.socket);
+		console.log(`Pong Service: Unauthenticated guest ${guestId} connected.`);
+	} else {
+		clientId = playerId;
+		playerConnections.set(clientId, connection.socket);
+		console.log(`Pong Service: Player ${playerId} connected.`);
+	}
+
+	/**
+	 * send the messages to the client
+	 */
+	connection.socket.on("message", (message: Buffer) => {
+		try {
+			const msg = JSON.parse(message.toString());
+			if (isPaused) return; // ignore movements if game is paused
+
+			// simulate the events
+			if (msg.event === "moveUp") moveUp(msg.payload);
+			if (msg.event === "moveDown") moveDown(msg.payload);
+		} catch (e) {
+			console.error("Invalid client message:", message.toString());
 		}
+	});
 
-		const JWT_SECRET = process.env.JWT_SECRET;
-		if (!JWT_SECRET)
-		{
-			return next(new Error("Configuration error: JWT_SECRET not set on server."));
-		}
+	/**
+	 * Clean the connection when the client disconnects
+	 */
+	connection.socket.on("close", () => {
+		console.log(`Pong Service: Player ${clientId} disconnected.`);
+		playerConnections.delete(clientId);
+	});
+});
 
-		jwt.verify(token, JWT_SECRET, (err: any, decoded: any) =>
-		{
-			if (err)
-			{
-				console.error("Invalid token:", err.message);
-				return next(new Error("Authentication error: Invalid token."));
+/**
+ * Game Loop: emits from native connections
+ */
+setInterval(() => {
+	if (!isPaused && playerConnections.size > 0) {
+		const state = updateGame();
+		const message = JSON.stringify({ event: "gameState", data: state });
+
+		// send the state to all connected players
+		for (const ws of playerConnections.values()) {
+			// ahora ws es directamente un WebSocket
+			if (ws.readyState === ws.OPEN) {
+				ws.send(message);
 			}
-		// Add user data  for the future, review
-		(socket as any).user = decoded;
-		next(); // valid token connection allowed
-	});
-});
-
-/**
- * Register REST routes with io injected
- */
-gameController(app, io);
-
-// WebSockets
-io.on("connection", (socket) =>
-{
-  	console.log("Player connected:", socket.id);
-
-  // Send initial state
-	socket.emit("gameState", getGameState());
-
-  // Player controls
-	socket.on("moveUp", (side: "left" | "right") =>
-		{
-		if (!isPaused)
-		{
-			const state = moveUp(side);
-			io.emit("gameState", state);
 		}
-	});
+	}
+}, 1000 / 60); // 60 FPS
 
-	socket.on("moveDown", (side: "left" | "right") =>
-	{
-		if (!isPaused)
-		{
-			const state = moveDown(side);
-			io.emit("gameState", state);
-		}
-	});
-
-	socket.on("disconnect", () =>
-	{
-		console.log("Player disconnected:", socket.id);
-	});
-});
-
-/**
- * Game loop for ball + scoring
- */
-	setInterval(() =>
-	{
-		if (!isPaused)
-		{
-			const state = updateGame();
-			io.emit("gameState", state);
-		}
-	}, 1000 / 60); // 60 FPS
-
-/**
- * Start server
- */
 const PORT = process.env.PORT || 3000;
-server.listen({ port: Number(PORT), host: "0.0.0.0" }, (err, address) =>
-{
-	if (err)
-	{
+app.listen({ port: Number(PORT), host: "0.0.0.0" }, (err, address) => {
+	if (err) {
 		console.error(err);
 		process.exit(1);
 	}
-	console.log(`Pong server running at ${address}`);
+	console.log(`Pong server (Fastify WS) running in ${address}`);
 });

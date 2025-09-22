@@ -5,6 +5,7 @@ import cors from "@fastify/cors";
 import { authMiddleware } from "./middleware/authMiddleware.js";
 import authRoutes from "./routes/authRoutes";
 import chatRoutes from "./routes/chatRoutes";
+import pongRoutes from "./routes/pongRoutes";
 
 // Loads .env variables into process.env
 dotenv.config();
@@ -14,6 +15,7 @@ const app = Fastify({ logger: true });
 
 app.register(authRoutes);
 app.register(chatRoutes);
+app.register(pongRoutes);
 
 await app.register(cors, {
   origin: "http://localhost:5173",

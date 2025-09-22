@@ -1,41 +1,38 @@
 import { FastifyInstance } from "fastify";
 import fastifyHttpProxy from "@fastify/http-proxy";
-import { SocketStream } from "@fastify/websocket";
-import { authMiddleware } from "../middleware/authMiddleware";
-import { connections } from "../index";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
-const connections = new Map<string, SocketStream>();
+
 export default async function pongRoutes(app: FastifyInstance)
 {
 	/**
-	 * Proxy for the API game calls
+	 * Proxy for the routes of the game API
 	 */
 	app.register(fastifyHttpProxy,
 	{
 		upstream: "http://pong-service:3000",
 		prefix: "/game",
 		rewritePrefix: "/game",
-        //preHandler: authMiddleware,
+		preHandler: authMiddleware,
 	});
 
 	/**
-	 * Specific proxy for fastify websocket connection
+	 * Proxy for the game websocket connection
 	 */
-    app.get('/socket.io/', { websocket: true }, (connection: SocketStream, req) =>
-    {
-        const userId = req.user?.id;
-        if (!userId)
-        {
-            connection.socket.close(1008, "User not authenticated");
-            return;
-        }
-        console.log(`Gateway: Cliente ${userId} conectado al WebSocket.`);
-        connections.set(userId, connection); // Add the connection to the global map
-
-        connection.socket.on('close', () => {
-            console.log(`Gateway: Cliente ${userId} desconectado.`);
-            connections.delete(userId); // Clean the connection at closing
-        });
-    })
-
+    app.register(fastifyHttpProxy,
+	{
+		upstream: "http://pong-service:3000",
+		prefix: "/ws/pong",
+		rewritePrefix: "/",
+		websocket: true,
+		preHandler: authMiddleware,
+		rewriteRequestHeaders: (originalReq, headers) =>
+		{
+			if (originalReq.user)
+			{
+				headers['x-player-id'] = originalReq.user.id;
+			}
+			return headers;
+		}
+	});
 }

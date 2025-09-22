@@ -76,14 +76,12 @@ function gameLoop()
  */
 export function pongPage()
 {
-	return `
-	
+	return  `
 	<h1>Server-Side Pong</h1>
 	<canvas style="border: 1px solid red" id="pongCanvas" width="800" height="600"></canvas>
 	<p>Use W/S to move Left Paddle, ArrowUp/ArrowDown for Right Paddle</p>
 	<p id="scoreboard">0 : 0</p>
-	<button id="startGameBtn">Start Game</button>
-	
+		
 	`;
 }
 
@@ -100,23 +98,20 @@ export async function pongHandlers()
 	const canvas = document.getElementById("pongCanvas") as HTMLCanvasElement;
 	ctx = canvas.getContext("2d");
 
-	try
+    try
 	{
 		const token = getAccessToken();
-		if (!token)
-		{
-			throw new Error("You must be logged in to play.");
-		}
+		if (!token) throw new Error("You must be logged in to play.");
 
-        socket = new WebSocket(`ws://localhost:8080/socket.io/?token=${token}`);
+		socket = new WebSocket(`ws://localhost:8080/ws/pong?token=${token}`);
         
-		socket.onmessage = (event) =>
+        socket.onmessage = (event) =>
 		{
 			const message = JSON.parse(event.data);
 			if (message.event === 'gameState')
 			{
 				gameState = message.data;
-					draw();
+				draw();
 			}
 		};
 
@@ -128,11 +123,12 @@ export async function pongHandlers()
 		};
 
 		const res = await fetch("http://localhost:8080/game/init", { method: "POST", headers: { "Authorization": `Bearer ${token}` }});
-		
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		
-		const data = await res.json();
+        
+		const resumeRes = await fetch("http://localhost:8080/game/resume", { method: "POST", headers: { "Authorization": `Bearer ${token}` }});
+		if (!resumeRes.ok) throw new Error(`HTTP ${resumeRes.status} on resume`);
 	}
+
 	catch (err)
 	{
 		const app = document.getElementById("app")!;

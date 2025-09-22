@@ -32,6 +32,7 @@ async function render() {
     {
         autoLoginUser("t", "t"); // auto login for testing purposes
         loginHandlers();
+	}
 	if (location.hash === "#/pong") {
         pongHandlers();
     }
