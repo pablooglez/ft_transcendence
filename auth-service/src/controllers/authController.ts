@@ -1,9 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { registerUser, loginUser, logoutUser, createTokensLogin } from "../services/authService";
 import { rotateTokens} from "../services/tokenService"
-import { speakeasy } from "speakeasy";
-import { findUserById, updateUser2FA } from "../repositories/userRepository";
-import { QRCode } from "qrcode";
+import * as speakeasy from "speakeasy";
+import { findUserById, updateUser2FA, debugUsers } from "../repositories/userRepository";
+import QRCode from "qrcode";
 
 export async function registerController(req: FastifyRequest, reply: FastifyReply) {
    const { username, password, email } = req.body as { username: string; password: string; email: string };
@@ -99,6 +99,7 @@ export async function logoutController(req: FastifyRequest, reply: FastifyReply)
 export async function verify2FAController(req: FastifyRequest, reply: FastifyReply) {
     const { userId, code } = req.body as { userId: number; code: string };
 
+    debugUsers();
     const user = findUserById(userId);
     if (!user || !user.totp_secret) {
         return reply.code(400).send({ error: "2FA not enabled" });
@@ -131,12 +132,11 @@ export async function verify2FAController(req: FastifyRequest, reply: FastifyRep
 export async function enable2FAController(req: FastifyRequest, reply: FastifyReply) {
     try {
         const { username, userId } = req.body as {username: string, userId: number};
-    
         const secret = speakeasy.generateSecret({
             name: `MyApp (${username})`,
             length: 20,
         });
-    
+
         updateUser2FA(secret.base32, userId);
     
         const qr = await QRCode.toDataURL(secret.otpauth_url);
