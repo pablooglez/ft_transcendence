@@ -9,6 +9,7 @@ db.prepare(`
     password TEXT,
     email TEXT UNIQUE,
     totp_secret TEXT,
+    pending_2fa_secret TEXT,
     is_2fa_enabled BOOLEAN DEFAULT 0
     )
     `).run();
