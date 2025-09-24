@@ -24,3 +24,18 @@ export function debugUsers() {
     const rows = db.prepare("SELECT id, username, totp_secret FROM users").all();
     console.log(rows);
 }
+
+export function updateUserPending2FA(secret: string, userId: number) {
+    const stmt = db.prepare("UPDATE users SET pending_2fa_secret = ? WHERE id = ?");
+    stmt.run(secret, userId);
+}
+
+export function activateUser2FA(userId: number, secret: string) {
+    const stmt = db.prepare("UPDATE users SET totp_secret = ?, pending_2fa_secret = NULL, is_2fa_enable = 1 WHERE id = ?");
+    stmt.run(secret, userId);
+}
+
+export function getUserPending2FA(userId: number): string | null {
+    const row = db.prepare("SELECT pending_2fa_secret FROM users WHERE id = ?").get(userId);
+    return row?.pending_2fa_secret ?? null;
+}
