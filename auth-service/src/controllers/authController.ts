@@ -23,7 +23,7 @@ export async function loginController(req: FastifyRequest, reply: FastifyReply) 
         const user = await loginUser(username, password);
 
         if (user.is_2fa_enabled) {
-            return reply.send({ require2FA: true, userId: user.id })
+            return reply.send({ requires2FA: true, userId: user.id })
         }
 
         const { token, refreshToken } = createTokensLogin(user);
@@ -108,7 +108,6 @@ export async function verify2FAController(req: FastifyRequest, reply: FastifyRep
     if (!secret) {
         return reply.code(400).send({ error: "2FA not set up" });
     }
-
     const verified = speakeasy.totp.verify({
         secret,
         encoding: "base32",
@@ -146,7 +145,6 @@ export async function enable2FAController(req: FastifyRequest, reply: FastifyRep
         });
 
         updateUserPending2FA(secret.base32, userId);
-        debugUsers();
         return reply.send({ message: "2FA setup started, call /generate-qr to get qr"})
 
     } catch (err: any) {
@@ -159,16 +157,14 @@ export async function generateQRController(req: FastifyRequest, reply: FastifyRe
     try {
         const { username, userId } = req.body as { username: string, userId: number};
         const pendingSecret = getUserPending2FA(userId);
-        console.log(`UserId: ${userId}`);
-        debugUsers();
         if (!pendingSecret) {
             return reply.code(400).send({ error: "No pending 2FA setup"});
         }
-
         const otpauthUrl = speakeasy.otpauthURL({
             secret: pendingSecret,
             label: `ft_transcendence`,
             issuer: "ft_transcendence",
+            encoding: "base32",
         });
         
         const qr = await QRCode.toDataURL(otpauthUrl);
