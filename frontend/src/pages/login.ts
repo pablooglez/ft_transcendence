@@ -234,14 +234,17 @@ export async function autoLoginUser(username: string, password: string) {
             const token = getAccessToken();
             const res = await fetch("http://localhost:8080/auth/generate-qr", {
               method: "POST",
-              headers: { "Authorization": `Bearer ${token}` },
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
               body: JSON.stringify({ username, userId }),
             });
 
             const data = await res.json();
 
             if (res.ok && data.qr) {
-              qrContainer.innerHTML = `<img src="${data.qr}" alt="QR Code />"`;
+              qrContainer.innerHTML = `<img src="${data.qr}" alt="QR Code" />`;
               form.style.display = "block";
               result.textContent = "Scan the QR in your authentication app, then verify the code below.";
             } else {
