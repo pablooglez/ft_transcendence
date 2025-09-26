@@ -1,7 +1,7 @@
 import { createUser, findUser } from "../repositories/usersRepository";
 
-export async function registerUser(username: string, password: string) {
-    createUser(username, password);
+export async function registerUser(email: string, username: string, password: string) {
+    createUser(email, username, password);
     return { message: "User registered successfully" };
 }
 
