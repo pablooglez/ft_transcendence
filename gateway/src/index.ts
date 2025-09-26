@@ -41,32 +41,6 @@ app.get("/protected", async (req, reply) => {
 app.get("/ping", async () => ({ pong: true }));
 app.get("/health", async () => ({ status: "ok", uptime: process.uptime() }));
 
-// ---------- NUEVO: listener upgrade para WebSocket handshake ----------
-if (app.server && (app.server as any).on) {
-  (app.server as any).on("upgrade", (req: any, socket: any, head: any) => {
-    try {
-      // Sólo procesamos ws /ws/pong
-      const url = new URL(req.url ?? "/", "http://localhost");
-      if (!url.pathname.startsWith("/ws/pong")) return;
-
-      const token = url.searchParams.get("token");
-      if (!token) {
-        app.log.warn("[Gateway upgrade] WS /ws/pong without token");
-        return;
-      }
-
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-      req.headers = req.headers || {};
-      req.headers["x-player-id"] = String(decoded.id);
-
-      app.log.info("[Gateway upgrade] injected x-player-id:", decoded.id);
-    } catch (err: any) {
-      app.log.warn("[Gateway upgrade] token decode failed:", err?.message ?? err);
-    }
-  });
-}
-// --------------------------------------------------------------------
-
 const PORT = process.env.PORT || 8080;
 
 const listeners = ['SIGINT', 'SIGTERM'];
