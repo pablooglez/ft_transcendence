@@ -6,18 +6,43 @@ import { generateAccessToken, generateRefreshToken } from "./tokenService";
 const refreshTokenRepo = new RefreshTokenRepository();
 
 export async function registerUser(username: string, password: string, email: string) {
-    const user = findUser(username);
+    const res = await fetch("http://user-management-service:8082/getUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+    });
+
+    const user = await res.json();
     if (user) {
         throw new Error("User already exists");
     }
 
     const hashed = await bcrypt.hash(password, 10);
     createUser(username, hashed, email);
-    return { message: "User registered successfully" };
+
+    const register = await fetch("http://user-management-service:8082/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, hashed, email }),
+      });
+
+    const result = await register.json();
+    if (result.ok)
+        return { message: "User registered successfully" };
+    else
+        throw new Error("Failed register in user service");
 }
 
 export async function loginUser(username: string, password: string) {
-    const user = findUser(username);
+    const res = await fetch("http://user-management-service:8082/getUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+    });
+
+    const user = await res.json();
+    console.log("user from user-management-service:", user);
+
     if (!user)
         throw new Error("Invalid username or password");
 
