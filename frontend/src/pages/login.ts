@@ -58,7 +58,30 @@ export function loginHandlers() {
         form.style.display = "none";
         logoutBtn.style.display = "block";
         } else if (res.ok && data.requires2FA) {
-            document.body.innerHTML = TwoFAForm(data.userId);
+            document.body.innerHTML = TwoFAForm();
+
+          const qrDiv = document.querySelector<HTMLDivElement>(".twofa-qrcode")!;
+          console.log(data);
+          try {
+            const res = await fetch("http://localhost:8080/auth/generate-qr", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${data.tempToken}`
+              },
+              body: JSON.stringify({ username: data.username, userId: data.userId }),
+              });
+  
+              const qr = await res.json();
+              if (res.ok && qr) {
+                qrDiv.innerHTML = `<img src="${qr.qr}" alt="QR Code" />`;
+              } else {
+                qrDiv.innerHTML = "❌ Failed to generate QR code";
+              }
+            } catch {
+              console.error("Failed to reach server");
+              qrDiv.innerHTML = "❌ Failed to generate QR code";
+            }
 
             const twofaForm = document.querySelector<HTMLFormElement>("#twofa-form")!;
             const twofaResult = document.querySelector<HTMLParagraphElement>("#twofa-result")!;
@@ -144,7 +167,22 @@ export async function autoLoginUser(username: string, password: string) {
         form.style.display = "none";
         logoutBtn.style.display = "block";
       } else if (res.ok && data.requires2FA) {
-          document.body.innerHTML = TwoFAForm(data.userId);
+          document.body.innerHTML = TwoFAForm();
+
+          const qrDiv = document.querySelector<HTMLDivElement>(".twofa-qrcode")!;
+          const res = await fetch("http://localhost:8080/auth/generate-qr", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${data.tempToken}`
+            },
+            body: JSON.stringify({ username: data.username, userId: data.userId }),
+            });
+
+            const qr = await res.json();
+            if (qr) {
+              qrDiv.innerHTML = `<img src="${qr}" alt="QR Code" />`;
+            }
 
           const twofaForm = document.querySelector<HTMLFormElement>("#twofa-form")!;
           const twofaResult = document.querySelector<HTMLParagraphElement>("#twofa-result")!;
@@ -199,14 +237,62 @@ export async function autoLoginUser(username: string, password: string) {
   };
   };
 
-  export function TwoFAForm(userId: number): string {
+export async function fetchQRCode(userId: number, username: string, token: string): Promise<string | null> {
+    try {
+        const res = await fetch("http://localhost:8080/auth/generate-qr", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ username, userId }),
+          });
+
+          const data = await res.json();
+
+        if (res.ok && data.qr) {
+          return data.qr;
+        }
+        } catch {
+          console.error("Failed to reach server");
+        }
+    return null;
+  }
+
+  export function TwoFAForm(): string {
+    const body = document.querySelector("body")!;
+    body.style.background = "black";
+
     return `
-      <h2>Enter 2FA Code</h2>
-      <form id="twofa-form">
-        <input type="text" id="twofa-code" placeholder="6-digit code">
-        <button type="submit">Verify</button>
-      </form>
-      <p id="twofa-result"></p>
+    <div class="twofa-body">
+        <h1 id="2fa-title">Enable two-factor authentication (2FA)</h1>
+        <div class="twofa-block">
+            <div>
+                <h2>Setup authenticator app</h2>
+                <p id="twofa-paragraph">Authenticator apps and browser extensions like 1Password, Authy, Microsoft Authenticator, etc.
+                    generate one-time passwords that are used as a second factor to verify your identity when prompted 
+                    during sign-in.
+                </p>
+            </div>
+            <div>
+                <h3 id="twofa-h3-title">Scan the QR code</h3>
+                <p id="twofa-paragraph">Use an authenticator app or browser extension to scan.</p>
+                <div class="twofa-qrcode"></div>
+            </div>
+            <div>
+                <h3 id="twofa-h3-title">Verify the code from the app</h3>
+                <form id="twofa-form">
+                    <input type="text" id="twofa-code" placeholder="6-digit code">
+                    <hr style="width: 100%; border: 1px solid #5a5f66;">
+                    <div>
+                        <button type="button" id="twofa-cancel" onclick="window.location.href='#/login'">Cancel</button>
+                        <button id="twofa-submit" type="submit">Verify</button>
+                    </div>
+                    <p id="twofa-result"></p>
+                </form>
+            </div>
+        </div>
+    </div>
       `;
   }
 
