@@ -11,6 +11,8 @@ export function Health(): string {
 export function healthHandlers() {
     const statusEl = document.getElementById("health-status")!;
     const button = document.getElementById("check-health")!;
+    const html = document.querySelector("html")!;
+    html.style.background = "none";
 
     async function updateHealth() {
         const token = getAccessToken();
