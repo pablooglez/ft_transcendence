@@ -1,11 +1,16 @@
-import { createUser, findUser } from "../repositories/usersRepository";
+import { createUser, findUserByUsername, findUserByEmail } from "../repositories/usersRepository";
 
 export async function registerUser(email: string, username: string, password: string) {
     createUser(username, password, email);
     return { message: "User registered successfully" };
 }
 
-export async function getUser(username: string ) {
-    const user = findUser(username);
+export async function getUserByUsername(username: string ) {
+    const user = findUserByUsername(username);
+    return user;
+}
+
+export async function getUserByEmail(email: string) {
+    const user = findUserByEmail(email);
     return user;
 }

@@ -1,24 +1,24 @@
 import bcrypt from "bcrypt";
 import { FastifyReply, FastifyRequest } from "fastify";
-import { registerUser, getUser } from "../services/usersService";
-
-//sudo docker logs trascende-user-management-service-1
-//sudo docker exec -it cbb022043b70 bash
+import { registerUser, getUserByUsername, getUserByEmail } from "../services/usersService";
 
 export async function registerController(req: FastifyRequest, reply: FastifyReply) {
 	const { email, username, password } = req.body as { email: string; username: string; password: string };
 
-	const user = await getUser(username);
+	const userName = await getUserByUsername(username);
+	const userEmail = await getUserByEmail(email);
 	try {
-		if (user)
-			throw new Error("Invalid username");
+		if (userName)
+			throw new Error("Username already exists");
+		if (userEmail)
+			throw new Error("Email already exists");
 		const hashed = await bcrypt.hash(password, 10);
 		const result = await registerUser(email, username, hashed);
 		return reply.send(result);
 	} 
 	catch (err: any) {
 		console.error("Error occurred during user registration:", err);
-		return reply.code(400).send({ error: "Username already exists" });
+		return reply.code(400).send({ error: err.message });	
 	}
 }
 
@@ -27,13 +27,9 @@ export async function userGetter(req: FastifyRequest, reply: FastifyReply) {
 
 	try {
 		const user = await getUser(username);
-		console.log("user.id:", user.id);
-		console.log("user.username:", user.username);
-		console.log("user.password:", user.password);
-		return reply.send({ 
-			id: user.id, 
-			username: user.username,
-			password: user.password
+		return reply.send({
+			id: user.id,
+			username: user.username
 		});
 	} catch (err: any) {
 		return reply.code(400).send({ error: err.message });

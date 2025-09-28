@@ -5,28 +5,20 @@ import { generateAccessToken, generateRefreshToken } from "./tokenService";
 const refreshTokenRepo = new RefreshTokenRepository();
 
 export async function registerUser(username: string, password: string, email: string) {
-/*     const res = await fetch("http://user-management-service:8082/getUser", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username }),
-    });
-
-    const user = await res.json();
-    if (user.id) {
-        throw new Error("User already exists");
-    }
-*/
-
+    console.log("Aqui llega 1");
     const register = await fetch("http://user-management-service:8082/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, username, password }),
     });
-
+    console.log("Aqui llega 2");
     if (register.ok)
+    {
+        createUser(username, password, email);
         return { message: "User registered successfully" };
+    }
     else
-        throw new Error("Failed register in user service");
+        throw new Error(await register.text());
 }
 
 export async function loginUser(username: string, password: string) {
@@ -38,23 +30,16 @@ export async function loginUser(username: string, password: string) {
 
     const user = await res.json();
 
-    console.log("Aqui llega 1");
     if (!user.id)
         throw new Error("Invalid username or password");
 
-    console.log("Aqui llega 2");
-    console.log("password:", password);
-    console.log("user.id:", user.id);
-    console.log("user.username:", user.username);
-    console.log("user.password:", user.password);
     const passwordControl = await fetch("http://user-management-service:8082/checkPassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
     });
     if (!passwordControl.ok)
-        throw new Error("Invalid username or password - pito");
-    console.log("Aqui llega por fin");
+        throw new Error("Invalid username or password");
     return user;
 }
 
