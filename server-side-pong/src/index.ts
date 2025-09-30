@@ -79,7 +79,7 @@ io.on("connection", (socket) =>
 			const state = updateGame();
 			io.emit("gameState", state);
 		}
-	}, 1000 / 60); // 60 FPS
+	}, 1000 / 120); // 60 FPS
 
 /**
  * Start server
