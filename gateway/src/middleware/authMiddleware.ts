@@ -10,6 +10,8 @@ const publicUrls = [
     "/auth/verify-2fa",
     "/auth/42/login",
     "/auth/42/callback",
+    "/auth/google/login",
+    "/auth/google/callback",
 ];
 
 export async function authMiddleware(req: FastifyRequest, reply: FastifyReply) {  

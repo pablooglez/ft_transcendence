@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { registerUser, loginUser, logoutUser, createTokensLogin, findOrCreateUserFrom42 } from "../services/authService";
+import { registerUser, loginUser, logoutUser, createTokensLogin, findOrCreateUserFrom42, findOrCreateUserFromGoogle } from "../services/authService";
 import { rotateTokens, generateAccessToken} from "../services/tokenService"
 import * as speakeasy from "speakeasy";
 import { findUserById, updateUser2FA, updateUserPending2FA, getUserPending2FA, activateUser2FA, debugUsers, createUser } from "../repositories/userRepository";
@@ -254,5 +254,73 @@ export async function callback42Controller(req: FastifyRequest, reply: FastifyRe
     } catch (err: any) {
         console.error("42 OAuth error:", err);
         return reply.code(500).send({ error: "42 login failed" });
+    }
+}
+
+export async function loginGoogleController(req: FastifyRequest, reply: FastifyReply) {
+    const redirectUri = encodeURIComponent(process.env.GOOGLE_REDIRECT_URI);
+    const clientId = process.env.GOOGLE_CLIENT_ID!;
+    const scope = encodeURIComponent("profile email");
+
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
+
+    return reply.redirect(url);
+}
+
+export async function callbackGoogleController(req: FastifyRequest, reply: FastifyReply) {
+    const code = req.query.code as string;
+
+    if (!code)
+        return reply.code(400).send({ error: "Missing authorization code" });
+
+    try {
+        const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams({
+                code,
+                cliend_id: process.env.GOOGLE_CLIENT_ID!,
+                client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+                redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+                grant_type: "authorization_code"
+            })
+        });
+
+        if (!tokenRes.ok)
+            throw new Error("Failed to exchange code for token");
+
+        const tokenData = await tokenRes.json();
+        const accessToken = tokenData.access_token;
+
+        const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        if (!userInfoRes.ok)
+            throw new Error("Failed to fetch user profile");
+
+        const googleUser = await userInfoRes.json();
+
+        const user = await findOrCreateUserFromGoogle(googleUser);
+
+        const { token, refreshToken } = createTokensLogin(user);
+
+        reply.setCookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+            path: "/auth/refresh",
+            maxAge: 7 * 24 * 60 * 60,
+        });
+
+        return reply.redirect("http://localhost:5173/#/home");
+
+    } catch (err) {
+        console.error("Google OAuth error:", err);
+        return reply.code(500).send({ error: "Google login failed" });
     }
 }

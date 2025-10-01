@@ -25,8 +25,13 @@ export function setupLoginHandlers() {
     const fortyTwoBtn = document.querySelector<HTMLButtonElement>("#fortyTwoLoginButton");
     fortyTwoBtn?.addEventListener("click", () => {
       window.location.href = "http://localhost:8080/auth/42/login";
-    })
+    });
     
+    const googleBtn = document.querySelector<HTMLButtonElement>("#googleLoginButton");
+    googleBtn?.addEventListener("click", () => {
+      window.location.href = "http://localhost:8080/auth/google/login";
+    });
+
     form.onsubmit = async (e) => {
       e.preventDefault();
   
