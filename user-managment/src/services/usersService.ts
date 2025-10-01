@@ -5,6 +5,11 @@ export async function registerUser(email: string, username: string, password: st
     return { message: "User registered successfully" };
 }
 
+export async function register42User(email: string, username: string) {
+    createUser(username, "", email);
+    return { message: "User registered successfully" };
+}
+
 export async function getUserByUsername(username: string ) {
     const user = findUserByUsername(username);
     return user;
