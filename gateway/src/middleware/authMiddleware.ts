@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import { parse } from "url";
 import jwt from "jsonwebtoken";
 
 const publicUrls = [
@@ -12,7 +13,9 @@ const publicUrls = [
 ];
 
 export async function authMiddleware(req: FastifyRequest, reply: FastifyReply) {  
-    if (publicUrls.includes(req.url))
+    const path = parse(req.url).pathname;
+    
+    if (publicUrls.includes(path!))
         return ;
 
     const authHeader = req.headers["authorization"];
