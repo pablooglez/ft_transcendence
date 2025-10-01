@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { registerUser, loginUser, logoutUser, createTokensLogin } from "../services/authService";
-import { rotateTokens} from "../services/tokenService"
+import { registerUser, loginUser, logoutUser, createTokensLogin, findOrCreateUserFrom42 } from "../services/authService";
+import { rotateTokens, generateAccessToken} from "../services/tokenService"
 import * as speakeasy from "speakeasy";
 import { findUserById, updateUser2FA, updateUserPending2FA, getUserPending2FA, activateUser2FA, debugUsers, createUser } from "../repositories/userRepository";
 import QRCode from "qrcode";
@@ -22,9 +22,9 @@ export async function loginController(req: FastifyRequest, reply: FastifyReply) 
     try {
         const user = await loginUser(username, password);
 
-        const authUser = findUserById(user.id);
-        if (authUser.is_2fa_enabled) {
-            return reply.send({ requires2FA: true, userId: user.id })
+        if (user.is_2fa_enabled) {
+            const token = generateAccessToken(user);
+            return reply.send({ requires2FA: true, userId: user.id, username: user.username, tempToken: token });
         }
 
         const { token, refreshToken } = createTokensLogin(user);
@@ -157,12 +157,18 @@ export async function enable2FAController(req: FastifyRequest, reply: FastifyRep
 export async function generateQRController(req: FastifyRequest, reply: FastifyReply) {
     try {
         const { username, userId } = req.body as { username: string, userId: number};
-        const pendingSecret = getUserPending2FA(userId);
-        if (!pendingSecret) {
-            return reply.code(400).send({ error: "No pending 2FA setup"});
+        
+        let secret = getUserPending2FA(userId);
+        if (!secret) {
+            const user = findUserById(userId);
+            if (!user || !user.totp_secret) {
+                return reply.code(400).send({ error: "No pending 2FA setup"});
+            }
+            secret = user.totp_secret;
         }
+
         const otpauthUrl = speakeasy.otpauthURL({
-            secret: pendingSecret,
+            secret: secret,
             label: `ft_transcendence`,
             issuer: "ft_transcendence",
             encoding: "base32",
@@ -174,5 +180,79 @@ export async function generateQRController(req: FastifyRequest, reply: FastifyRe
     } catch (err: any) {
         console.error("generateQR error:", err);
         return reply.code(500).send({ error: "Failed to generate QR"});
+    }
+}
+
+export async function login42Controller(req: FastifyRequest, reply: FastifyReply) {
+    const clientId = process.env.FORTY_TWO_CLIENT_ID;
+    const redirectUri = process.env.FORTY_TWO_REDIRECT_URI;
+    const encodedRedirectUri = encodeURIComponent(redirectUri);
+    const scope = "public";
+
+    const url = `https://api.intra.42.fr/oauth/authorize?client_id=${clientId}&redirect_uri=${encodedRedirectUri}&response_type=code&scope=${scope}`;
+
+    return reply.redirect(url);
+}
+
+export async function callback42Controller(req: FastifyRequest, reply: FastifyReply) {
+    const code = req.query.code as string;
+
+    if (!code)
+        return reply.code(400).send({ error: "Missing authorization code"});
+
+    try {
+        const redirectUri = process.env.FORTY_TWO_REDIRECT_URI;
+
+        const tokenRes = await fetch("https://api.intra.42.fr/oauth/token", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+                grant_type: "authorization_code",
+                client_id: process.env.FORTY_TWO_CLIENT_ID!,
+                client_secret: process.env.FORTY_TWO_CLIENT_SECRET!,
+                code,
+                redirect_uri: redirectUri,
+            }),
+        });
+
+        if (!tokenRes.ok) {
+            const err = await tokenRes.text();
+            throw new Error(`Failed to fetch token: ${err}`);
+        }
+
+        const tokenData = await tokenRes.json();
+        const accessToken = tokenData.access_token;
+
+        const userRes = await fetch("https://api.intra.42.fr/v2/me", {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!userRes.ok) {
+            const err = await userRes.text();
+            throw new Error(`Failed to fetch user profile: ${err}`);
+        }
+
+        const intraUser = await userRes.json();
+
+        const user = await findOrCreateUserFrom42(intraUser);
+
+        const { token, refreshToken } = createTokensLogin(user);
+
+        reply.setCookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+            path: "/auth/refresh",
+            maxAge: 7 * 24 * 60 * 60,
+        });
+
+        return reply.redirect("http://localhost:5173/#/home");
+    
+    } catch (err: any) {
+        console.error("42 OAuth error:", err);
+        return reply.code(500).send({ error: "42 login failed" });
     }
 }

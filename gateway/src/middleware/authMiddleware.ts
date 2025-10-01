@@ -1,10 +1,21 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import { parse } from "url";
 import jwt from "jsonwebtoken";
 
-const publicUrls = ["/auth/login", "/auth/register", "/auth/refresh", "/ping", "/auth/verify-2fa"];
+const publicUrls = [
+    "/auth/login",
+    "/auth/register",
+    "/auth/refresh",
+    "/ping",
+    "/auth/verify-2fa",
+    "/auth/42/login",
+    "/auth/42/callback",
+];
 
 export async function authMiddleware(req: FastifyRequest, reply: FastifyReply) {  
-    if (publicUrls.includes(req.url))
+    const path = parse(req.url).pathname;
+    
+    if (publicUrls.includes(path!))
         return ;
 
     const authHeader = req.headers["authorization"];
