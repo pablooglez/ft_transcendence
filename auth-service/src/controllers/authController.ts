@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { registerUser, loginUser, logoutUser, createTokensLogin, findOrCreateUserFrom42 } from "../services/authService";
+import { registerUser, loginUser, logoutUser, createTokensLogin, findOrCreateUserFrom42, findOrCreateUserFromGoogle } from "../services/authService";
 import { rotateTokens, generateAccessToken} from "../services/tokenService"
 import * as speakeasy from "speakeasy";
 import { findUserById, updateUser2FA, updateUserPending2FA, getUserPending2FA, activateUser2FA, debugUsers, createUser } from "../repositories/userRepository";
