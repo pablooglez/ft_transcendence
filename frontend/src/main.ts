@@ -33,7 +33,7 @@ export async function render() {
     if (location.hash === "#/login")
         {
             const html = document.querySelector("html")!;
-            html.style.background = "black";
+            html.style.background = "#111111";
             //autoLoginUser("t", "t"); // auto login for testing purposes
             const accessToken = getAccessToken();
             if (accessToken) {
@@ -47,7 +47,7 @@ export async function render() {
     if (location.hash === "#/login/2fa")
     {
         const html = document.querySelector("html")!;
-        html.style.background = "black";
+        html.style.background = "#111111";
         await handleTwoFA(tempToken, tempUsername, tempUserId);
     }
     if (location.hash === "" || location.hash === "#/" || location.hash === "#/home") {

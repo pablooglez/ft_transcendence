@@ -53,8 +53,25 @@ header {
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: center;   /* default: center items */
+  position: relative;        /* needed for absolute positioning */
   padding: 0.5rem 1rem;
+}
+
+.nav-center {
+  display: flex;
+  list-style: none;
+  gap: 1rem;
+}
+
+.nav-right {
+  display: flex;
+  list-style: none;
+  gap: 1rem;
+  position: absolute;   /* take it out of normal flow */
+  right: 1rem;          /* stick to right side */
+  top: 50%;
+  transform: translateY(-50%); /* vertical align */
 }
 
 .nav-links {
@@ -297,6 +314,7 @@ header {
   align-items: center;
   z-index: 1;
   margin-top: 2rem;
+  border: 1px solid transparent;
 }
 
 .p-emoji {
@@ -304,7 +322,9 @@ header {
 }
 
 .card:hover {
-  box-shadow: 0 8px 15px rgba(255, 255, 255, 0.2);
+    border: 1px solid #42F3FA;
+    box-shadow: 0 0 2px rgba(0,255,0,.3), 0 0 5px rgba(0,255,0,.2), 0 0 8px rgba(0,255,0,.1), 0 2px 0 black;
+
 }
 
 /* ******************************** */
@@ -738,6 +758,43 @@ header {
 .login-result {
   color: white;
   margin-left: 1rem;
+}
+
+.terms-wrapper {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #ccc;
+}
+
+.terms-wrapper input[type="checkbox"] {
+    margin-right: 5px;
+    accent-color: #42F3FA; /* modern browsers: checkbox highlight color */
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    vertical-align: middle;
+    margin-top: 5px;
+}
+
+.terms-wrapper label {
+    display: flex;
+    align-items: center;
+    color: white;
+    cursor: pointer;
+    line-height: 1.4;
+    gap: 8px;
+}
+
+.terms-wrapper a {
+    color: #42F3FA;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.terms-wrapper a:hover {
+    text-decoration: underline;
 }
 
 /* ******************************** */
