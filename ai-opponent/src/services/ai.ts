@@ -36,9 +36,11 @@ export function computeAIKeyEvents(
     maxJitterMs = 200
 ): AIActionResponse
 {
+    // Predict and target
     const predicted = predictBallY(ball, fieldHeight, targetX);
     const targetY = (predicted === null ? fieldHeight / 2 : predicted) + aimBias;
 
+    // CAlculate the movement
     const diff = targetY - paddleCenter;
     const neededMove = Math.abs(diff);
     const maxMove = paddleSpeed * dtSeconds;
@@ -48,6 +50,7 @@ export function computeAIKeyEvents(
     const moveDurationSeconds = actualMove / paddleSpeed;
     const moveDurationMs = Math.round(moveDurationSeconds * 1000);
 
+    // Add randomness and potential mistakes
     const jitter = Math.floor(Math.random() * (maxJitterMs + 1));
     const durationJitter = Math.floor((Math.random() - 0.5) * 150);
     let finalDurationMs = Math.max(0, moveDurationMs + durationJitter);
@@ -61,7 +64,7 @@ export function computeAIKeyEvents(
         // No movement needed}
     }
     else {
-        // Movement and mistake logic
+        // Generate Events (with mistake logic)
         if (mistakeRoll < mistakeProb)
         {
             mistakeMade = true;
@@ -76,7 +79,7 @@ export function computeAIKeyEvents(
             }
             else
             {
-                // Short pulse 
+                // Short pulse to the target
                 finalDurationMs = Math.max(50, Math.floor(finalDurationMs * 0.4));
             }
         }
@@ -87,9 +90,14 @@ export function computeAIKeyEvents(
         events.push({ type: 'keyup', key: keyName, atMs: jitter + finalDurationMs });
     }
 
+    
+    // Clamp and Finalize
+    // Ensure all event timestamps are within the current time interval.
+
     const maxMs = Math.max(0, Math.round(dtSeconds * 1000));
     const clamped = events.map(e => ({ ...e, atMs: Math.min(maxMs, Math.max(0, e.atMs)) }));
 
+    // Calculate the final paddle position for debug purposes.
     const effectiveSignedMove = (moveDirection === 'down' ? 1 : -1) * (finalDurationMs / 1000) * paddleSpeed * (mistakeMade ? 0.6 : 1);
     const paddleCenterAfter = Math.max(paddleHeight / 2, Math.min(fieldHeight - paddleHeight / 2, paddleCenter + effectiveSignedMove));
 
