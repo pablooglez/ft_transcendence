@@ -1,11 +1,16 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
 
-const publicUrls = ["/auth/login", "/auth/register", "/auth/refresh", "/ping"];
+const publicUrls = ["/auth/login", "/auth/register", "/auth/refresh", "/ping", "/health"];
 
-export async function authMiddleware(req: FastifyRequest, reply: FastifyReply) {  
-    if (publicUrls.includes(req.url))
-        return ;
+export async function authMiddleware(req: FastifyRequest, reply: FastifyReply) {
+    // Obtener la ruta sin parámetros de consulta
+    const urlPath = req.url.split('?')[0];
+    
+    // Permitir rutas públicas y WebSocket
+    if (publicUrls.includes(urlPath) || urlPath.startsWith('/ws')) {
+        return;
+    }
 
     const authHeader = req.headers["authorization"];
     if (!authHeader) {

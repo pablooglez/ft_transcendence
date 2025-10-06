@@ -12,6 +12,9 @@ dotenv.config();
 // Creates a Fastify instance with logger activated
 const app = Fastify({ logger: true });
 
+// Register auth middleware BEFORE routes
+app.addHook("preHandler", authMiddleware);
+
 app.register(authRoutes);
 app.register(chatRoutes);
 
@@ -34,8 +37,6 @@ app.get("/protected", async (req, reply) => {
 // END JWT IMPLEMENTATION
 //
 //------------------
-
-app.addHook("preHandler", authMiddleware);
 
 // Endpoint to test the server
 app.get("/ping", async () => {
