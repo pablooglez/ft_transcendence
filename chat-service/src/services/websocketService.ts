@@ -293,6 +293,55 @@ export function handleWebSocketDisconnection(websocket: WebSocket): void {
     }
 }
 
+// Game Invitation Functions
+export function notifyGameInvitation(toUserId: number, invitationData: any): void {
+    const message: WebSocketMessage = {
+        type: 'message' as any, // Will be extended
+        userId: invitationData.from_user_id,
+        data: {
+            ...invitationData,
+            event_type: 'game_invitation_received'
+        }
+    };
+    
+    const sent = sendToUser(toUserId, message);
+    if (!sent) {
+        console.log(`User ${toUserId} not connected - invitation will be available when they connect`);
+    }
+}
+
+export function notifyGameInvitationAccepted(fromUserId: number, acceptanceData: any): void {
+    const message: WebSocketMessage = {
+        type: 'message' as any,
+        userId: acceptanceData.to_user_id,
+        data: {
+            ...acceptanceData,
+            event_type: 'game_invitation_accepted'
+        }
+    };
+    
+    const sent = sendToUser(fromUserId, message);
+    if (!sent) {
+        console.log(`User ${fromUserId} not connected - acceptance notification lost`);
+    }
+}
+
+export function notifyGameInvitationRejected(fromUserId: number, rejectionData: any): void {
+    const message: WebSocketMessage = {
+        type: 'message' as any,
+        userId: rejectionData.to_user_id,
+        data: {
+            ...rejectionData,
+            event_type: 'game_invitation_rejected'
+        }
+    };
+    
+    const sent = sendToUser(fromUserId, message);
+    if (!sent) {
+        console.log(`User ${fromUserId} not connected - rejection notification lost`);
+    }
+}
+
 // Cleanup function for periodic maintenance
 export function cleanupStaleConnections(): void {
     const now = Date.now();
