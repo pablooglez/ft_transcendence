@@ -7,6 +7,13 @@ export default async function chatRoutes(app: FastifyInstance) {
         upstream: "http://chat-service:8083",
         prefix: "/conversations",
         rewritePrefix: "/conversations",
+        replyOptions: {
+            rewriteRequestHeaders: (originalReq, headers) => ({
+                ...headers,
+                'x-user-id': originalReq.user?.id?.toString() || '',
+                'x-username': originalReq.user?.username || '',
+            })
+        }
     });
 
     // Proxy para WebSocket
@@ -14,6 +21,13 @@ export default async function chatRoutes(app: FastifyInstance) {
         upstream: "http://chat-service:8083",
         prefix: "/ws",
         rewritePrefix: "/ws",
-        websocket: true
+        websocket: true,
+        replyOptions: {
+            rewriteRequestHeaders: (originalReq, headers) => ({
+                ...headers,
+                'x-user-id': originalReq.user?.id?.toString() || '',
+                'x-username': originalReq.user?.username || '',
+            })
+        }
     });
 }

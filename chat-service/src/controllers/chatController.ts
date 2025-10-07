@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import * as chatService from "../services/chatService";
+import { extractUserId } from "../utils/auth";
 
 export async function sendMessageController(req: FastifyRequest, reply: FastifyReply) {
     const { recipientId, content, messageType } = req.body as { 
@@ -9,24 +10,28 @@ export async function sendMessageController(req: FastifyRequest, reply: FastifyR
     };
 
     try {
-        // ALL: Extract userId from JWT token (for now using mock)
-        const userId = 1; // This will be extracted from JWT token later
+        const userId = extractUserId(req.headers);
         
         const result = await chatService.sendMessage(userId, recipientId, content, messageType);
         return reply.send(result);
     } catch (err: any) {
+        if (err.message === 'User not authenticated') {
+            return reply.code(401).send({ error: 'Unauthorized' });
+        }
         return reply.code(400).send({ error: err.message });
     }
 }
 
 export async function getConversationsController(req: FastifyRequest, reply: FastifyReply) {
     try {
-        // ALL: Extract userId from JWT token (for now using mock)
-        const userId = 1; // This will be extracted from JWT token later
+        const userId = extractUserId(req.headers);
         
         const result = chatService.getConversations(userId);
         return reply.send({ conversations: result });
     } catch (err: any) {
+        if (err.message === 'User not authenticated') {
+            return reply.code(401).send({ error: 'Unauthorized' });
+        }
         return reply.code(500).send({ error: err.message });
     }
 }
@@ -36,8 +41,7 @@ export async function getMessagesController(req: FastifyRequest, reply: FastifyR
     const { limit } = req.query as { limit?: string };
 
     try {
-        // ALL: Extract userId from JWT token (for now using mock)
-        const userId = 1; // This will be extracted from JWT token later
+        const userId = extractUserId(req.headers);
         
         const result = chatService.getMessages(
             parseInt(otherUserId), 
@@ -46,6 +50,9 @@ export async function getMessagesController(req: FastifyRequest, reply: FastifyR
         );
         return reply.send({ messages: result });
     } catch (err: any) {
+        if (err.message === 'User not authenticated') {
+            return reply.code(401).send({ error: 'Unauthorized' });
+        }
         return reply.code(500).send({ error: err.message });
     }
 }
@@ -54,12 +61,14 @@ export async function blockUserController(req: FastifyRequest, reply: FastifyRep
     const { blockedUserId } = req.body as { blockedUserId: number };
 
     try {
-        // ALL: Extract userId from JWT token (for now using mock)
-        const userId = 1; // This will be extracted from JWT token later
+        const userId = extractUserId(req.headers);
         
         const result = chatService.blockUser(userId, blockedUserId);
         return reply.send(result);
     } catch (err: any) {
+        if (err.message === 'User not authenticated') {
+            return reply.code(401).send({ error: 'Unauthorized' });
+        }
         return reply.code(400).send({ error: err.message });
     }
 }
@@ -68,12 +77,14 @@ export async function unblockUserController(req: FastifyRequest, reply: FastifyR
     const { id: blockedUserId } = req.params as { id: string };
 
     try {
-        // ALL: Extract userId from JWT token (for now using mock)
-        const userId = 1; // This will be extracted from JWT token later
+        const userId = extractUserId(req.headers);
         
         const result = chatService.unblockUser(userId, parseInt(blockedUserId));
         return reply.send(result);
     } catch (err: any) {
+        if (err.message === 'User not authenticated') {
+            return reply.code(401).send({ error: 'Unauthorized' });
+        }
         return reply.code(400).send({ error: err.message });
     }
 }
