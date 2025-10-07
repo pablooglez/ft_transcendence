@@ -76,14 +76,30 @@ export async function getMessages(otherUserId: number) {
 export async function blockUser(blockedUserId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://localhost:8080/conversations/${blockedUserId}/block`, {
+        console.log('🔒 Blocking user:', blockedUserId);
+        console.log('📝 Token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+        
+        const url = `http://localhost:8080/conversations/${blockedUserId}/block`;
+        const options = {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
-            }
-        });
+            },
+            body: JSON.stringify({}) // Send empty JSON body
+        };
+        
+        console.log('🌐 Request URL:', url);
+        console.log('📤 Request options:', JSON.stringify(options, null, 2));
+        
+        const res = await fetch(url, options);
+        
+        console.log('📥 Response status:', res.status);
+        console.log('📥 Response ok:', res.ok);
+        
         if (!res.ok) {
+            const errorText = await res.text();
+            console.error('❌ Error response:', errorText);
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
         return await res.json();

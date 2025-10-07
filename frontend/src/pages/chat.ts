@@ -176,7 +176,7 @@ export function chatHandlers() {
             if (result.conversations && result.conversations.length > 0) {
                 conversationsList.innerHTML = result.conversations
                     .map((conv: any) => `
-                        <div class="conversation-item" data-conversation-id="${conv.id}">
+                        <div class="conversation-item" data-user-id="${conv.otherUserId}">
                             <div class="conversation-avatar">${conv.otherUserId.toString().slice(-1)}</div>
                             <div class="conversation-info">
                                 <div class="conversation-name">User ${conv.otherUserId}</div>
@@ -189,7 +189,7 @@ export function chatHandlers() {
                 setTimeout(() => {
                     document.querySelectorAll('.conversation-item').forEach(item => {
                         item.addEventListener('click', () => {
-                            const userId = Number(item.getAttribute('data-conversation-id'));
+                            const userId = Number(item.getAttribute('data-user-id'));
                             const userName = item.querySelector('.conversation-name')?.textContent || '';
                             // Visual highlight of the active conversation
                             document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));

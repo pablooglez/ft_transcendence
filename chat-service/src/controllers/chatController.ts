@@ -74,7 +74,7 @@ export async function blockUserController(req: FastifyRequest, reply: FastifyRep
 }
 
 export async function unblockUserController(req: FastifyRequest, reply: FastifyReply) {
-    const { id: blockedUserId } = req.params as { id: string };
+    const { userId: blockedUserId } = req.params as { userId: string };
 
     try {
         const userId = extractUserId(req.headers);
