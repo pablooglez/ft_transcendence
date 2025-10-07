@@ -5,9 +5,10 @@ import { Login, TwoFALogin } from "./pages/Login/login";
 import { Health, healthHandlers } from "./pages/health";
 import { Ping } from "./pages/ping";
 import { Chat, chatHandlers } from "./pages/chat";
-import { LocalPong, RemotePong } from "./pages/Pong/pong";
-import { localPongHandlers, remotePongHandlers } from "./pages/Pong/pongHandlers";
+// import { pongPage } from "./pages/pong"; // Eliminado
 import { Settings } from "./pages/settings";
+import { localPongPage, localPongHandlers } from "./pages/localPong"; // Importar handlers
+import { remotePongPage, remotePongHandlers } from "./pages/remotePong"; // Importar handlers
 import { Game } from "./pages/game"
 
 export function router(route: string): string {
@@ -28,10 +29,12 @@ export function router(route: string): string {
         case "#/chat":
             setTimeout(chatHandlers, 0);
             return Chat();
-		case "#/pong/local":
-			return LocalPong();
-        case "#/pong/remote":
-            return RemotePong();
+        case "#/localPong":
+            setTimeout(localPongHandlers, 0); // Añadir llamada a handlers
+            return localPongPage();
+        case "#/remotePong":
+            setTimeout(remotePongHandlers, 0); // Añadir llamada a handlers
+            return remotePongPage();
         case "#/settings":
             return Settings();
         case "#/game":

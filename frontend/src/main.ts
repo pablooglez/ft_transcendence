@@ -3,7 +3,8 @@ import { registerHandlers, autoRegisterUser } from "./pages/register"
 import { loginHandlers, autoLoginUser } from "./pages/Login/login"
 import { homeText } from "./pages/home"
 import { getAccessToken, refreshAccessToken, tempToken, tempUserId, tempUsername } from "./state/authState"
-import { pongHandlers } from "./pages/pong";
+import { localPongPage, localPongHandlers } from "./pages/localPong";
+import { remotePongPage, remotePongHandlers } from "./pages/remotePong";
 import { handleTwoFA } from "./pages/Login/twofa";
 import { handleOAuthErrors } from "./pages/Login/loginHandlers";
 import { fetchCurrentUser } from "./pages/Login/loginService";
