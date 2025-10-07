@@ -509,9 +509,13 @@ export function chatHandlers() {
             // Reload invitations
             await loadGameInvitations();
             
-            // TODO: Redirect to game page with opponent info
-            // For now, just log the result
-            console.log('Game ready with opponent:', result.opponentId);
+            // Redirect to game page after 2 seconds
+            setTimeout(() => {
+                // TODO: Change to remote pong when multiplayer is implemented
+                // For now, redirect to local pong as placeholder
+                window.location.hash = '#/local-pong';
+                console.log('Redirected to game with opponent:', result.opponentId);
+            }, 2000);
         } catch (error: any) {
             messageResult.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
             messageResult.className = 'message-result error';
@@ -524,10 +528,21 @@ export function chatHandlers() {
             await rejectGameInvitation(invitationId);
             console.log('Invitation rejected');
             
+            // Show rejection message
+            messageResult.innerHTML = '<span class="success">❌ Invitation rejected</span>';
+            messageResult.className = 'message-result';
+            
             // Reload invitations
             await loadGameInvitations();
+            
+            // Clear message after 3 seconds
+            setTimeout(() => {
+                messageResult.innerHTML = '';
+            }, 3000);
         } catch (error: any) {
             console.error('Error rejecting invitation:', error);
+            messageResult.innerHTML = `<span class="error">❌ Error rejecting invitation</span>`;
+            messageResult.className = 'message-result error';
         }
     }
 
