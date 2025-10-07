@@ -48,7 +48,7 @@ function findOrCreateRoom(socketId: string): { roomId: string; role: "left" | "r
  * Register CORS plugin
  */
 app.register(cors, {
-  origin: ["http://localhost:5173", "http://localhost:3000", "*"],
+  origin: ["http://localhost:5173", "http://localhost:7000", "*"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
 });
@@ -151,7 +151,7 @@ setInterval(() =>
 /**
  * START SERVER
  */
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 7000;
 app.listen({ port: Number(PORT), host: "0.0.0.0" }, () =>
 {
 	console.log(`Pong server running at http://localhost:${PORT}`);

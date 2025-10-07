@@ -7,7 +7,7 @@ export default async function pongRoutes(fastify: FastifyInstance) {
   // Proxy only REST API routes to the pong service
   // Socket.IO connections go directly from frontend to pong service
   fastify.register(proxy, {
-    upstream: "http://pong-service:3000",
+    upstream: "http://pong-service:7000",
     prefix: "/game",
     rewritePrefix: "/game",
     
