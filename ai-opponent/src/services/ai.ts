@@ -1,17 +1,17 @@
 import { Ball, AIKeyEvent, AIActionResponse } from '../utils/types';
 
-
 function mod(n: number, m: number) { return ((n % m) + m) % m; }
 
+
 /**
- * Predicts the Y coordinate where the ball will reach targetX, simulating bounces on top/bottom.
- * Returns null if the ball is moving away (t <= 0).
+ * Predicts the Y position of the ball when it reaches targetX, considering bounces.
+ * Returns null if the ball is not moving towards targetX.
  */
-export function predictBallY(ball: Ball, fieldHeight: number, targetX: number): number | null {
+export function predictBallY(ball: Ball, fieldHeight: number, targetX: number): number | null
+{
     if (ball.dx === 0) return null;
     const t = (targetX - ball.x) / ball.dx;
     if (t <= 0) return null;
-
 
     let predictedY = ball.y + ball.dy * t;
     const period = 2 * fieldHeight;
@@ -21,7 +21,8 @@ export function predictBallY(ball: Ball, fieldHeight: number, targetX: number): 
 }
 
 /**
- * Generates a sequence of keyboard events to move the paddle for a given interval.
+ * Generates a sequence of keyboard events to move the paddle for a given interval (dtSeconds).
+ * This acts as a "planner" for the next second.
  */
 export function computeAIKeyEvents(
     paddleCenter: number,
@@ -29,85 +30,75 @@ export function computeAIKeyEvents(
     ball: Ball,
     fieldHeight: number,
     targetX: number,
-    paddleSpeed: number,
-    dtSeconds = 1,
+    paddleSpeed: number, // px per second
+    dtSeconds = 1.0,
     aimBias = 0,
-    mistakeProb = 0.08, // 8% of error probability
-    maxJitterMs = 200
-): AIActionResponse
-{
-    // Predict and target
-    const predicted = predictBallY(ball, fieldHeight, targetX);
-    const targetY = (predicted === null ? fieldHeight / 2 : predicted) + aimBias;
-
-    // CAlculate the movement
-    const diff = targetY - paddleCenter;
-    const neededMove = Math.abs(diff);
-    const maxMove = paddleSpeed * dtSeconds;
-    const actualMove = Math.min(neededMove, maxMove);
-    const moveDirection: 'up' | 'down' = diff < 0 ? 'up' : 'down';
-
-    const moveDurationSeconds = actualMove / paddleSpeed;
-    const moveDurationMs = Math.round(moveDurationSeconds * 1000);
-
-    // Add randomness and potential mistakes
-    const jitter = Math.floor(Math.random() * (maxJitterMs + 1));
-    const durationJitter = Math.floor((Math.random() - 0.5) * 150);
-    let finalDurationMs = Math.max(0, moveDurationMs + durationJitter);
-
-    const mistakeRoll = Math.random();
-    let mistakeMade = false;
+    mistakeProb = 0.08
+): AIActionResponse {
     const events: AIKeyEvent[] = [];
+    let mistakeMade = false;
 
-    if (actualMove < 1)
+    // 1. Predicts the ball and movement target
+    const predictedY = predictBallY(ball, fieldHeight, targetX);
+    // If we can't predict, aim for the center
+    const targetY = (predictedY === null ? fieldHeight / 2 : predictedY) + aimBias;
+
+    // 2. Calculate the necessary movement
+    const diff = targetY - paddleCenter;
+    const distanceToMove = Math.abs(diff);
+
+    // If no movement is needed, do nothing
+    if (distanceToMove < 5)
     {
-        // No movement needed}
-    }
-    else {
-        // Generate Events (with mistake logic)
-        if (mistakeRoll < mistakeProb)
-        {
-            mistakeMade = true;
-            if (Math.random() < 0.4)
-            {
-                // inverts the direction briefly
-                const wrongDir = moveDirection === 'up' ? 'down' : 'up';
-                const wrongDur = Math.max(50, Math.floor(finalDurationMs * 0.5));
-                events.push({ type: 'keydown', key: wrongDir === 'up' ? 'ArrowUp' : 'ArrowDown', atMs: jitter });
-                events.push({ type: 'keyup', key: wrongDir === 'up' ? 'ArrowUp' : 'ArrowDown', atMs: jitter + wrongDur });
-                finalDurationMs = Math.max(50, Math.floor(finalDurationMs * 0.6));
-            }
-            else
-            {
-                // Short pulse to the target
-                finalDurationMs = Math.max(50, Math.floor(finalDurationMs * 0.4));
-            }
-        }
-
-        // Correct event or correction of previous event
-        const keyName = moveDirection === 'up' ? 'ArrowUp' : 'ArrowDown';
-        events.push({ type: 'keydown', key: keyName, atMs: jitter });
-        events.push({ type: 'keyup', key: keyName, atMs: jitter + finalDurationMs });
+        return { events, debug: { predictedY, targetY, paddleCenterBefore: paddleCenter, paddleCenterAfter: paddleCenter, mistakeMade: false } };
     }
 
-    
-    // Clamp and Finalize
-    // Ensure all event timestamps are within the current time interval.
+    // Borders checking to prevent the paddle from getting stuck
+    const paddleTopY = paddleCenter - paddleHeight / 2;
+    const paddleBottomY = paddleCenter + paddleHeight / 2;
+    const moveDirection: 'up' | 'down' = diff < 0 ? 'up' : 'down';
+    const BORDER_TOLERANCE = 5;
 
-    const maxMs = Math.max(0, Math.round(dtSeconds * 1000));
-    const clamped = events.map(e => ({ ...e, atMs: Math.min(maxMs, Math.max(0, e.atMs)) }));
+    if (moveDirection === 'up' && paddleTopY <= BORDER_TOLERANCE)
+        return { events, debug: { predictedY, targetY, paddleCenterBefore: paddleCenter, paddleCenterAfter: paddleCenter, mistakeMade: false } };
+    if (moveDirection === 'down' && paddleBottomY >= fieldHeight - BORDER_TOLERANCE)
+        return { events, debug: { predictedY, targetY, paddleCenterBefore: paddleCenter, paddleCenterAfter: paddleCenter, mistakeMade: false } };
 
-    // Calculate the final paddle position for debug purposes.
-    const effectiveSignedMove = (moveDirection === 'down' ? 1 : -1) * (finalDurationMs / 1000) * paddleSpeed * (mistakeMade ? 0.6 : 1);
-    const paddleCenterAfter = Math.max(paddleHeight / 2, Math.min(fieldHeight - paddleHeight / 2, paddleCenter + effectiveSignedMove));
+    // 3. Calculate the time needed for the movement
+    // Time (s) = Distance (px) / Speed (px/s)
+    const timeNeededSeconds = distanceToMove / paddleSpeed;
+
+    // The movement time cannot be greater than the decision interval
+    const moveDurationSeconds = Math.min(timeNeededSeconds, dtSeconds);
+    let moveDurationMs = Math.round(moveDurationSeconds * 1000);
+
+    const keyName = moveDirection === 'up' ? 'ArrowUp' : 'ArrowDown';
+
+    // 4. Simulate human errors
+    if (Math.random() < mistakeProb)
+    {
+        mistakeMade = true;
+        // The mistake can be hesitation, moving in the wrong direction, or moving for less time
+        moveDurationMs *= (0.2 + Math.random() * 0.5); // Move between 20% and 70% of the needed time
+    }
+
+    // 5. Generate the event plan if movement is needed
+    if (moveDurationMs > 50)
+    { // Only generate events if the movement is significant
+        events.push({ type: 'keydown', key: keyName, atMs: 0 }); // Start moving immediately
+        events.push({ type: 'keyup', key: keyName, atMs: moveDurationMs }); // Stop moving after the calculated duration
+    }
+
+    // 6. Finalize and return the plan
+    const clampedEvents = events.map(e => ({ ...e, atMs: Math.min(Math.round(dtSeconds * 1000), e.atMs) }));
 
     return {
-        events: clamped,
+        events: clampedEvents,
         debug: {
-            predictedY: predicted,
+            predictedY,
             targetY,
             paddleCenterBefore: paddleCenter,
-            paddleCenterAfter,
+            paddleCenterAfter: paddleCenter, // The executor will calculate the final position
             mistakeMade
         }
     } as AIActionResponse;

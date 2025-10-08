@@ -102,8 +102,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 function togglePause() {
-    const endpoint = isGameRunning ? "pause" : "resume";
-    fetch(`${apiHost}/game/${roomId}/${endpoint}`, { method: "POST" });
+    fetch(`${apiHost}/game/${roomId}/toggle-pause`, { method: "POST" });
 }
 
 const handleKeyUp = (e: KeyboardEvent) => keysPressed.delete(e.key);

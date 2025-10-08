@@ -17,7 +17,7 @@ const CANVAS_HEIGHT = 600;
 const PADDLE_WIDTH = 20;
 const PADDLE_HEIGHT = 100;
 const PADDLE_OFFSET_X = 30;
-const PADDLE_SPEED = 300; // Velocidad de la pala en px/segundo
+const PADDLE_SPEED = 600; // Paddle speed in px/second
 
 // Calculated constants
 const FIELD_HEIGHT = CANVAS_HEIGHT;
@@ -44,12 +44,12 @@ app.post('/ai/update', (req, res) => {
 
         const paddle = side === 'left' ? state.paddles.left : state.paddles.right;
         const targetX = side === 'left' ? PADDLE_X_LEFT : PADDLE_X_RIGHT;
-        const dtSeconds = typeof dt === 'number' && dt > 0 ? dt : 1.0; // Intervalo de decisión de 1 segundo por defecto
+        const dtSeconds = typeof dt === 'number' && dt > 0 ? dt : 1.0; // Default to 1 second if dt is not provided
 
-        // La 'y' que recibimos es el borde superior, la IA necesita el centro.
-        const currentCenterY = paddle.y + PADDLE_HEIGHT / 2;
+        const currentPaddleTopY = paddle.y;
+        const currentCenterY = currentPaddleTopY + (PADDLE_HEIGHT / 2);
 
-        // Llamamos a la función original que genera eventos de teclado
+        // Call the original function that generates key events
         const aiResponse: AIActionResponse = computeAIKeyEvents(
             currentCenterY,
             PADDLE_HEIGHT,
