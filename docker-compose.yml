@@ -62,6 +62,8 @@ services:
       - ./server-side-pong/.env
     ports:
       - "7000:7000"
+    depends_on:
+      - ai-service
     networks:
       - backend
     
@@ -72,8 +74,6 @@ services:
         - ./ai-opponent/.env
      ports:
         - "7010:7010"
-     depends_on:
-      - ai-service
      networks:
         - backend
 
