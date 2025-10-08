@@ -1,17 +1,28 @@
 import { getAccessToken } from "../state/authState";
 
 export function Settings() {
-  setTimeout(settingsHandlers, 0); // Asegura que los handlers se ejecuten después de renderizar el HTML
+  const accessToken = getAccessToken();
+  if (!accessToken) {
+    return `
+      <div class="settings-actions">
+        <h1>Settings</h1>
+        <p>Please log or register in to view your settings.</p>
+      </div>
+    `;
+  }
+  setTimeout(() => settingsHandlers(accessToken), 0); // Pasar el token como parámetro
   return `
-    <h1>Settings</h1>
-    <form id="settings-form">
-      <p id="username"></p>
-      <p id="useremail"></p>
-    </form>
+      <div class="settings-actions">
+        <h1>Settings</h1>
+        <form id="settings-form">
+          <p id="username"></p>
+          <p id="useremail"></p>
+        </form>
+      </div>
   `;
 }
 
-export function settingsHandlers() {
+export function settingsHandlers(accessToken: string) {
 
   setTimeout(() => { //Defines la funcion, no se ejecuta aun
     const form = document.querySelector<HTMLFormElement>("#settings-form")!;
