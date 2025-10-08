@@ -19,7 +19,7 @@ const CANVAS_HEIGHT = 600;
 const PADDLE_WIDTH = 20;
 const PADDLE_HEIGHT = 100;
 const PADDLE_OFFSET_X = 30;
-const BALL_RADIUS = 10;
+const BALL_RADIUS = 10; // Corregido para que la bola sea visible
 const WINNING_SCORE = 10;
 
 const keysPressed = new Set<string>();
@@ -57,7 +57,7 @@ export function localPongPage(): string {
 
       <div class="scoreboard-container">
         <button id="startGameBtn" class="pong-button hidden">Start Game</button>
-        <div id="scoreboard" class="scoreboard">0 : 0</div>
+        <div id="scoreboard" class="scoreboard hidden">0 : 0</div>
         <button id="playAgainBtn" class="pong-button hidden">Play Again</button>
       </div>
 
@@ -75,7 +75,7 @@ export function localPongPage(): string {
         </div>
       </div>
 
-      <div id="extraInfo" class="extra-info">
+      <div id="extraInfo" class="extra-info hidden">
         <p>Press 'P' to Pause/Resume</p>
       </div>
     </div>
@@ -88,27 +88,38 @@ function cleanup() {
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
     isGameRunning = false;
+    keysPressed.clear();
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
     if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
+
     if (e.key.toLowerCase() === "p") {
-        fetch(`${apiHost}/game/${roomId}/toggle-pause`, { method: "POST" });
-    } else {
-        keysPressed.add(e.key);
+        togglePause();
+        return;
     }
+
+    keysPressed.add(e.key);
 };
+
+function togglePause() {
+    fetch(`${apiHost}/game/${roomId}/toggle-pause`, { method: "POST" });
+}
 
 const handleKeyUp = (e: KeyboardEvent) => keysPressed.delete(e.key);
 
-function gameLoop() {
+function gameLoop(isAiMode: boolean) {
     if (socket && isGameRunning) {
-        if (keysPressed.has("w")) socket.emit("moveUp", "left", "local");
-        if (keysPressed.has("s")) socket.emit("moveDown", "left", "local");
-        if (keysPressed.has("ArrowUp")) socket.emit("moveUp", "right", "local");
-        if (keysPressed.has("ArrowDown")) socket.emit("moveDown", "right", "local");
+        if (keysPressed.has("w")) socket.emit("moveUp", "left", roomId);
+        if (keysPressed.has("s")) socket.emit("moveDown", "left", roomId);
+
+        if (!isAiMode) {
+            if (keysPressed.has("ArrowUp")) socket.emit("moveUp", "right", roomId);
+            if (keysPressed.has("ArrowDown")) socket.emit("moveDown", "right", roomId);
+        }
     }
-    animationFrameId = requestAnimationFrame(gameLoop);
+
+    animationFrameId = requestAnimationFrame(() => gameLoop(isAiMode));
 }
 
 export function localPongHandlers() {
@@ -117,12 +128,16 @@ export function localPongHandlers() {
     
     document.getElementById("1v1Btn")!.addEventListener("click", () => {
         prepareGameUI();
+        (document.querySelector(".right-controls p") as HTMLElement).textContent = "Right Player: ↑ / ↓";
         document.getElementById("roleInfo")!.textContent = "Local mode: Two players, one keyboard";
-        startGame();
+        startGame(false);
     });
 
     document.getElementById("1vAIBtn")!.addEventListener("click", () => {
-        alert("1 vs AI mode is not implemented yet.");
+        prepareGameUI();
+        (document.querySelector(".right-controls p") as HTMLElement).textContent = "Right Player: AI";
+        document.getElementById("roleInfo")!.textContent = "Local mode: Player vs. AI";
+        startGame(true);
     });
 
     document.getElementById("startGameBtn")!.addEventListener("click", () => {
@@ -138,18 +153,11 @@ export function localPongHandlers() {
     });
 
     document.getElementById("playAgainBtn")!.addEventListener("click", () => {
-        document.getElementById("winnerMessage")!.style.display = "none";
-        document.getElementById("playAgainBtn")!.classList.add("hidden");
-        const token = getAccessToken();
-        fetch(`${apiHost}/game/${roomId}/init`, { 
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        }).then(() => {
-            (document.getElementById("startGameBtn")!).classList.remove("hidden");
-        });
-        isGameRunning = false;
+        (document.getElementById("modeSelection")!).style.display = "flex";
+        (document.getElementById("pongCanvas")!).style.display = "none";
+        (document.getElementById("gameInfo")!).style.display = "none";
+        (document.getElementById("winnerMessage")!).style.display = "none";
+        (document.getElementById("playAgainBtn")!).classList.add("hidden");
     });
 }
 
@@ -157,21 +165,45 @@ function prepareGameUI() {
     (document.getElementById("modeSelection")!).style.display = "none";
     (document.getElementById("pongCanvas")!).style.display = "block";
     (document.getElementById("gameInfo")!).style.display = "flex";
+    (document.getElementById("scoreboard")!).classList.remove("hidden");
+    (document.getElementById("extraInfo")!).classList.remove("hidden");
 }
 
-function startGame() {
+async function startGame(isAiMode: boolean) {
     const wsHost = `ws://${window.location.hostname}:7000`;
     socket = io(wsHost);
 
-    const token = getAccessToken();
-    fetch(`${apiHost}/game/${roomId}/init`, { 
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
     isGameRunning = false;
-    (document.getElementById("startGameBtn")!).classList.remove("hidden");;
+    cancelAnimationFrame(animationFrameId);
+    gameLoop(isAiMode);
+
+    try {
+        if (!isAiMode) {
+            await fetch(`${apiHost}/game/${roomId}/stop-ai`, { method: "POST" });
+        }
+
+        const token = getAccessToken();
+        const initResponse = await fetch(`${apiHost}/game/${roomId}/init`, { 
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!initResponse.ok) {
+            throw new Error(`init failed (${initResponse.status})`);
+        }
+
+        if (isAiMode) {
+            const startAiResponse = await fetch(`${apiHost}/game/${roomId}/start-ai`, { method: "POST" });
+            if (!startAiResponse.ok) {
+                throw new Error(`start-ai failed (${startAiResponse.status})`);
+            }
+        } else {
+            (document.getElementById("startGameBtn")!).classList.remove("hidden");
+        }
+    } catch (error) {
+        console.error("[LocalPong] Failed to start game", error);
+    }
 
     socket.on("gameState", (state: GameState) => {
         gameState = state;
@@ -181,24 +213,29 @@ function startGame() {
         }
     });
 
-    socket.on("gamePaused", ({ paused }: { paused: boolean }) => {
+    socket.on("gamePaused", (payload: boolean | { paused: boolean }) => {
+        const paused = typeof payload === "boolean" ? payload : payload?.paused;
         isGameRunning = !paused;
+    });
+
+    socket.on("disconnect", () => {
+        isGameRunning = false;
     });
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
-
-    gameLoop();
 }
 
 function checkWinner() {
-    if (!gameState.gameEnded || !isGameRunning) return;
+    if (!gameState.gameEnded) return;
 
     const winnerMsg = document.getElementById("winnerMessage")!;
+    const isAiMode = (document.querySelector(".right-controls p") as HTMLElement).textContent === "Right Player: AI";
+
     if (gameState.scores.left >= WINNING_SCORE) {
         winnerMsg.textContent = "Player 1 Wins!";
     } else if (gameState.scores.right >= WINNING_SCORE) {
-        winnerMsg.textContent = "Player 2 Wins!";
+        winnerMsg.textContent = isAiMode ? "AI Wins!" : "Player 2 Wins!";
     }
     winnerMsg.style.display = "block";
     endGame();
@@ -206,16 +243,19 @@ function checkWinner() {
 
 function endGame() {
     isGameRunning = false;
-    document.getElementById("playAgainBtn")!.classList.remove("hidden");;
-    (document.getElementById("startGameBtn")!).classList.add("hidden");;
+    cancelAnimationFrame(animationFrameId); // Detiene el bucle de juego
+    document.getElementById("playAgainBtn")!.classList.remove("hidden");
+    (document.getElementById("startGameBtn")!).classList.add("hidden");
 }
 
 function draw() {
     if (!ctx) return;
 
+    // Fondo
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+    // Línea central
     ctx.strokeStyle = "#FFF";
     ctx.setLineDash([10, 5]);
     ctx.beginPath();
@@ -224,11 +264,13 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // Pala izquierda
     ctx.shadowColor = "#42F3FA";
     ctx.shadowBlur = 15;
     ctx.fillStyle = "#42F3FA";
     ctx.fillRect(PADDLE_OFFSET_X, gameState.paddles.left.y, PADDLE_WIDTH, PADDLE_HEIGHT);
 
+    // Pala derecha
     ctx.shadowColor = "#FE92FD";
     ctx.shadowBlur = 15;
     ctx.fillStyle = "#FE92FD";
@@ -236,6 +278,7 @@ function draw() {
     
     ctx.shadowBlur = 0;
     
+    // Bola
     if (!gameState.gameEnded) {
         ctx.shadowColor = "#ffffff";
         ctx.shadowBlur = 10;
@@ -245,6 +288,7 @@ function draw() {
         ctx.fill();
     }
 
+    // Puntuación
     ctx.shadowBlur = 0;
     document.getElementById("scoreboard")!.textContent = `${gameState.scores.left} : ${gameState.scores.right}`;
 }

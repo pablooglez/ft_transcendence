@@ -13,8 +13,11 @@ export function setupLoginHandlers() {
 
     
     if (isLoggedIn()) {
-      const user = JSON.parse(localStorage.getItem("user")!);
+      const userStr = localStorage.getItem("user");
+      const user = JSON.parse(userStr!);
+      showElement(result);
       setText(result, "✅ You are already logged in");
+      getElement("#login-name").textContent = `${user.user.username}`;
       getElement("#twofa-section").innerHTML = Enable2FAHtml();
       hideElement(form);
       showElement(logoutBtn);

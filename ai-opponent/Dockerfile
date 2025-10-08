@@ -7,6 +7,6 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3010
+EXPOSE 7010
 
-CMD ["npx", "ts-node", "src/index.ts"]
+CMD ["npx", "tsx", "src/index.ts"]
