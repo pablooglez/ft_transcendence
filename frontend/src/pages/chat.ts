@@ -1,4 +1,4 @@
-import { getConversations, sendMessage, getMessages, blockUser, unblockUser, sendGameInvitation, getGameInvitations, acceptGameInvitation, rejectGameInvitation } from "../services/api";
+import { getConversations, sendMessage, getMessages, blockUser, unblockUser, sendGameInvitation, getGameInvitations, acceptGameInvitation, rejectGameInvitation, getUserProfile } from "../services/api";
 import { websocketClient, ChatMessage } from "../services/websocketClient";
 import { getUserIdFromToken } from "../state/authState";
 
@@ -49,6 +49,9 @@ export function Chat(): string {
                         </div>
                     </div>
                     <div class="chat-actions">
+                        <button id="view-profile-btn" class="view-profile-btn" style="display: none;" title="View profile">
+                            👤
+                        </button>
                         <button id="invite-game-btn" class="invite-game-btn" style="display: none;" title="Invite to play Pong">
                             🎮
                         </button>
@@ -106,8 +109,9 @@ export function chatHandlers() {
     const messagesContainer = document.getElementById('messages-container') as HTMLDivElement;
     const blockButton = document.getElementById('block-user-btn') as HTMLButtonElement;
     const inviteGameButton = document.getElementById('invite-game-btn') as HTMLButtonElement;
+    const viewProfileButton = document.getElementById('view-profile-btn') as HTMLButtonElement;
 
-    if (!messageForm || !loadButton || !messageResult || !conversationsList || !messagesContainer || !blockButton || !inviteGameButton) {
+    if (!messageForm || !loadButton || !messageResult || !conversationsList || !messagesContainer || !blockButton || !inviteGameButton || !viewProfileButton) {
         console.error('Chat elements not found in DOM');
         return;
     }
@@ -277,6 +281,25 @@ export function chatHandlers() {
         }
     });
 
+    // Handle view profile button click
+    viewProfileButton.addEventListener('click', async () => {
+        if (!activeConversationId) {
+            alert('No conversation selected');
+            return;
+        }
+
+        try {
+            const profile = await getUserProfile(activeConversationId);
+            console.log('User profile:', profile);
+            
+            // TODO PASO 4: Show profile modal with this data
+            alert(`Profile:\nUsername: ${profile.username}\nUser ID: ${profile.id}`);
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            alert('Failed to load user profile');
+        }
+    });
+
     // Initialize WebSocket connection and message handling
     async function initializeWebSocket() {
         try {
@@ -359,6 +382,12 @@ export function chatHandlers() {
             const isBlocked = blockedUsers.has(otherUserId);
             blockBtn.textContent = isBlocked ? '✅' : '🚫';
             blockBtn.title = isBlocked ? 'Unblock user' : 'Block user';
+        }
+
+        // Show view profile button
+        const profileBtn = document.getElementById('view-profile-btn') as HTMLButtonElement;
+        if (profileBtn) {
+            profileBtn.style.display = 'block';
         }
 
         // Show invite to game button

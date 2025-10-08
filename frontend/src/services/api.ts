@@ -222,3 +222,22 @@ export async function rejectGameInvitation(invitationId: number) {
         throw err;
     }
 }
+
+// User Profile Functions
+export async function getUserProfile(userId: number) {
+    try {
+        const token = getAccessToken();
+        const res = await fetch(`http://localhost:8080/users/${userId}`, {
+            headers: { 
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return await res.json();
+    } catch (err) {
+        console.error("Failed to get user profile:", err);
+        throw err;
+    }
+}
