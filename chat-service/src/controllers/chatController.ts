@@ -46,7 +46,7 @@ export async function getMessagesController(req: FastifyRequest, reply: FastifyR
         const result = chatService.getMessages(
             parseInt(otherUserId), 
             userId, 
-            limit ? parseInt(limit) : undefined
+            limit ? parseInt(limit) : 50
         );
         return reply.send({ messages: result });
     } catch (err: any) {
