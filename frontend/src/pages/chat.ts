@@ -166,9 +166,17 @@ export function chatHandlers() {
 
         const recipientId = parseInt(recipientIdInput.value);
         const content = messageContentInput.value;
+        const currentUserId = getCurrentUserId();
 
         if (isNaN(recipientId) || !content.trim()) {
             messageResult.innerHTML = '<span class="error">Please fill all fields correctly</span>';
+            messageResult.className = 'message-result error';
+            return;
+        }
+
+        // Prevent sending messages to yourself
+        if (recipientId === currentUserId) {
+            messageResult.innerHTML = '<span class="error">❌ You cannot send messages to yourself</span>';
             messageResult.className = 'message-result error';
             return;
         }
