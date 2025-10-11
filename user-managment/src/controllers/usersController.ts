@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { FastifyReply, FastifyRequest } from "fastify";
-import { registerUser, register42User, getUserByUsername, getUserById, getUserByEmail, getIDbyUsername } from "../services/usersService";
+import { registerUser, register42User, getUserByUsername, getUserById, getUserByEmail, getIDbyUsername, getAllUsers } from "../services/usersService";
 
 export async function registerController(req: FastifyRequest, reply: FastifyReply) {
 	const { email, username, password } = req.body as { email: string; username: string; password: string };
@@ -133,5 +133,15 @@ export async function getUserProfileController(req: FastifyRequest, reply: Fasti
 		});
 	} catch (err: any) {
 		return reply.code(400).send({ error: err.message });
+	}
+}
+
+export async function getAllUsersController(req: FastifyRequest, reply: FastifyReply) {
+	try {
+		const users = await getAllUsers();
+		return reply.send(users);
+	} catch (err: any) {
+		console.error("Error occurred while getting all users:", err);
+		return reply.code(500).send({ error: err.message });
 	}
 }

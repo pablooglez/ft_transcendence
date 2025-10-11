@@ -28,3 +28,8 @@ export function findIDByUsername(username: string) {
 	const result = stmt.get(username);
 	return result ? result.id : null;
 }
+
+export function findAllUsers() {
+	const stmt = db.prepare("SELECT id, username, email FROM users ORDER BY username");
+	return stmt.all();
+}

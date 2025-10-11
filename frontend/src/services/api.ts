@@ -241,3 +241,39 @@ export async function getUserProfile(userId: number) {
         throw err;
     }
 }
+
+export async function searchUsersByUsername(query: string) {
+    try {
+        const token = getAccessToken();
+        const res = await fetch(`http://localhost:8080/users/search?q=${encodeURIComponent(query)}`, {
+            headers: { 
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return await res.json();
+    } catch (err) {
+        console.error("Failed to search users:", err);
+        throw err;
+    }
+}
+
+export async function getAllUsers() {
+    try {
+        const token = getAccessToken();
+        const res = await fetch(`http://localhost:8080/users`, {
+            headers: { 
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return await res.json();
+    } catch (err) {
+        console.error("Failed to get all users:", err);
+        throw err;
+    }
+}
