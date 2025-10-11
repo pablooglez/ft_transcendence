@@ -11,7 +11,7 @@ let animationFrameId: number;
 let isGameRunning = false;
 const roomId = "local"; // Always local for this mode
 
-const apiHost = `http://${window.location.hostname}:8080`;
+const apiHost = `http://${window.location.hostname}:7000`;
 
 // Game constants
 const CANVAS_WIDTH = 800;
