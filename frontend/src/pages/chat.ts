@@ -7,6 +7,9 @@ let activeConversationId: number | null = null;
 let activeConversationName: string = '';
 let blockedUsers: Set<number> = new Set(); // Track blocked users
 
+// Username cache to avoid repeated API calls
+const usernameCache: Map<number, string> = new Map();
+
 export function Chat(): string {
     return `
         <div class="whatsapp-container">
@@ -14,9 +17,10 @@ export function Chat(): string {
             <div class="conversations-sidebar">
                 <div class="sidebar-header">
                     <h2>Chats</h2>
-                    <button id="load-conversations" class="refresh-btn">
-                        <span>↻</span>
-                    </button>
+                    <div id="connection-status" class="connection-status">
+                        <span class="status-indicator">●</span>
+                        <span class="status-text">Connecting...</span>
+                    </div>
                 </div>
                 
                 <!-- Game Invitations Section -->
@@ -132,7 +136,7 @@ export function Chat(): string {
 export function chatHandlers() {
     // Get DOM elements with TypeScript types
     const messageForm = document.getElementById('message-form') as HTMLFormElement;
-    const loadButton = document.getElementById('load-conversations') as HTMLButtonElement;
+    const connectionStatus = document.getElementById('connection-status') as HTMLDivElement;
     const messageResult = document.getElementById('message-result') as HTMLDivElement;
     const conversationsList = document.getElementById('conversations-list') as HTMLDivElement;
     const messagesContainer = document.getElementById('messages-container') as HTMLDivElement;
@@ -140,10 +144,13 @@ export function chatHandlers() {
     const inviteGameButton = document.getElementById('invite-game-btn') as HTMLButtonElement;
     const viewProfileButton = document.getElementById('view-profile-btn') as HTMLButtonElement;
 
-    if (!messageForm || !loadButton || !messageResult || !conversationsList || !messagesContainer || !blockButton || !inviteGameButton || !viewProfileButton) {
+    if (!messageForm || !connectionStatus || !messageResult || !conversationsList || !messagesContainer || !blockButton || !inviteGameButton || !viewProfileButton) {
         console.error('Chat elements not found in DOM');
         return;
     }
+
+    // Debounce timer for conversation loading
+    let loadConversationsTimeout: number | null = null;
 
     // Load game invitations on page load
     loadGameInvitations();
@@ -213,6 +220,9 @@ export function chatHandlers() {
             
             messageResult.className = 'message-result success';
             
+            // Auto-refresh conversations list after sending message
+            loadConversationsDebounced();
+            
             // Clear form
             messageContentInput.value = '';
             
@@ -225,38 +235,72 @@ export function chatHandlers() {
         }
     });
 
-    // Handle load conversations button
-    loadButton.addEventListener('click', async () => {
+    // Debounced version to avoid excessive calls
+    function loadConversationsDebounced() {
+        if (loadConversationsTimeout) {
+            clearTimeout(loadConversationsTimeout);
+        }
+        
+        loadConversationsTimeout = setTimeout(() => {
+            loadConversationsAuto();
+        }, 500); // Wait 500ms before actually loading
+    }
+
+    // Auto-load conversations function
+    async function loadConversationsAuto() {
         try {
             conversationsList.innerHTML = '<div class="loading">Loading conversations...</div>';
             
             const result = await getConversations();
             
             if (result.conversations && result.conversations.length > 0) {
+                // First show loading placeholders
                 conversationsList.innerHTML = result.conversations
                     .map((conv: any) => `
                         <div class="conversation-item" data-user-id="${conv.otherUserId}">
                             <div class="conversation-avatar">${conv.otherUserId.toString().slice(-1)}</div>
                             <div class="conversation-info">
-                                <div class="conversation-name">User ${conv.otherUserId}</div>
+                                <div class="conversation-name">Loading...</div>
                                 <div class="conversation-preview">Last updated: ${new Date(conv.updatedAt).toLocaleString()}</div>
                             </div>
                         </div>
                     `).join('');
+
+                // Then load usernames asynchronously
+                result.conversations.forEach(async (conv: any) => {
+                    const username = await getUsername(conv.otherUserId);
+                    const conversationItem = document.querySelector(`[data-user-id="${conv.otherUserId}"] .conversation-name`);
+                    if (conversationItem) {
+                        conversationItem.textContent = username;
+                    }
+                    
+                    // Update avatar with first letter of username
+                    const avatarElement = document.querySelector(`[data-user-id="${conv.otherUserId}"] .conversation-avatar`);
+                    if (avatarElement && username !== `User ${conv.otherUserId}`) {
+                        avatarElement.textContent = username.charAt(0).toUpperCase();
+                    }
+                });
                     
                 // Add click handlers to conversation items
                 setTimeout(() => {
                     document.querySelectorAll('.conversation-item').forEach(item => {
-                        item.addEventListener('click', () => {
-                            const userId = Number(item.getAttribute('data-user-id'));
-                            const userName = item.querySelector('.conversation-name')?.textContent || '';
+                        const userId = Number(item.getAttribute('data-user-id'));
+                        
+                        // Restore active conversation selection if it exists
+                        if (activeConversationId === userId) {
+                            item.classList.add('active');
+                        }
+                        
+                        item.addEventListener('click', async () => {
+                            // Get the real username (in case it's still loading)
+                            const userName = await getUsername(userId);
                             // Visual highlight of the active conversation
                             document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
                             item.classList.add('active');
                             selectConversation(userId, userName);
                         });
                     });
-                }, 0);
+                }, 100); // Small delay to ensure usernames are loaded
                 
                 console.log('Conversations loaded:', result);
             } else {
@@ -275,7 +319,10 @@ export function chatHandlers() {
                 </div>
             `;
         }
-    });
+    }
+
+    // Load conversations automatically on page load
+    loadConversationsAuto();
 
     // Handle block/unblock user button
     blockButton.addEventListener('click', async () => {
@@ -359,6 +406,9 @@ export function chatHandlers() {
                             ...message,
                             isSent: false
                         });
+                        
+                        // Auto-refresh conversations list to show new message/conversation
+                        loadConversationsDebounced();
                     }
                 }
             });
@@ -509,17 +559,70 @@ export function chatHandlers() {
 
     // Update connection status indicator
     function updateConnectionStatus(connected: boolean) {
-        const statusElement = document.getElementById('contact-status') as HTMLSpanElement;
-        if (statusElement) {
-            statusElement.textContent = connected ? 'Online' : 'Offline';
-            statusElement.style.color = connected ? '#25D366' : '#999';
+        const statusIndicator = document.querySelector('#connection-status .status-indicator');
+        const statusText = document.querySelector('#connection-status .status-text');
+        
+        if (statusIndicator && statusText) {
+            if (connected) {
+                statusIndicator.textContent = '●';
+                (statusIndicator as HTMLElement).style.color = '#25D366';
+                statusText.textContent = 'Connected';
+            } else {
+                statusIndicator.textContent = '●';
+                (statusIndicator as HTMLElement).style.color = '#ff4444';
+                statusText.textContent = 'Disconnected';
+            }
         }
     }
 
-    // Get current user ID (temporary implementation)
+    // Get current user ID from authentication
     function getCurrentUserId(): number {
-        const userId = getUserIdFromToken();
-        return userId || 1; // Fallback to 1 if no token
+        // First try to get from JWT token
+        const tokenUserId = getUserIdFromToken();
+        if (tokenUserId) {
+            return tokenUserId;
+        }
+
+        // Fallback: try to get from localStorage user object
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (user && user.id) {
+                    return user.id;
+                }
+            }
+        } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+        }
+
+        // If no authentication found, redirect to login
+        console.warn('No authentication found, redirecting to login');
+        window.location.hash = '#/login';
+        return 0; // Return 0 to indicate no user
+    }
+
+    // Get username with caching to avoid repeated API calls
+    async function getUsername(userId: number): Promise<string> {
+        // Check cache first
+        if (usernameCache.has(userId)) {
+            return usernameCache.get(userId)!;
+        }
+
+        try {
+            const profile = await getUserProfile(userId);
+            const username = profile.username || `User ${userId}`;
+            
+            // Cache the result
+            usernameCache.set(userId, username);
+            return username;
+        } catch (error) {
+            console.error(`Failed to get username for user ${userId}:`, error);
+            // Fallback to User ID format
+            const fallback = `User ${userId}`;
+            usernameCache.set(userId, fallback);
+            return fallback;
+        }
     }
 
     // Load game invitations

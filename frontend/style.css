@@ -922,25 +922,29 @@ header {
   text-shadow: 0 0 10px rgba(66, 243, 250, 0.7);
 }
 
-.refresh-btn {
-  background: rgba(66, 243, 250, 0.2);
-  border: 1px solid #42F3FA;
-  color: #42F3FA;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 16px;
+.connection-status {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
+  gap: 8px;
+  font-size: 14px;
+  opacity: 0.9;
 }
 
-.refresh-btn:hover {
-  background: rgba(66, 243, 250, 0.3);
-  box-shadow: 0 0 10px rgba(66, 243, 250, 0.6);
-  transform: scale(1.05);
+.connection-status .status-indicator {
+  font-size: 12px;
+  animation: pulse 2s infinite;
+}
+
+.connection-status .status-text {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
 }
 
 .conversations-list {
