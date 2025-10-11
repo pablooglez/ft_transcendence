@@ -3,7 +3,7 @@
  * @brief Frontend logic for Local Pong game (1v1 and 1vAI)
  */
 import { io, Socket } from "socket.io-client";
-import { getAccessToken } from "../state/authState";
+import { getAccessToken, refreshAccessToken } from "../state/authState";
 
 let socket: Socket;
 let ctx: CanvasRenderingContext2D | null = null;
@@ -92,6 +92,24 @@ function cleanup() {
     keysPressed.clear();
 }
 
+// Helper: POST with Authorization header and one retry after token refresh
+async function postGame(path: string): Promise<Response> {
+    const makeReq = async () => {
+        const token = getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        return fetch(`${apiHost}${path}`, { method: "POST", headers });
+    };
+    let res = await makeReq();
+    if (res.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            res = await makeReq();
+        }
+    }
+    return res;
+}
+
 const handleKeyDown = (e: KeyboardEvent) => {
     if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
 
@@ -104,7 +122,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 function togglePause() {
-    fetch(`${apiHost}/game/${roomId}/toggle-pause`, { method: "POST" });
+    postGame(`/game/${roomId}/toggle-pause`);
 }
 
 const handleKeyUp = (e: KeyboardEvent) => keysPressed.delete(e.key);
@@ -142,13 +160,7 @@ export function localPongHandlers() {
     });
 
     document.getElementById("startGameBtn")!.addEventListener("click", () => {
-        const token = getAccessToken();
-        fetch(`${apiHost}/game/${roomId}/resume`, { 
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
+        postGame(`/game/${roomId}/resume`);
         (document.getElementById("startGameBtn")!).classList.add("hidden");
         isGameRunning = true;
     });
@@ -186,22 +198,16 @@ async function startGame(isAiMode: boolean) {
 
     try {
         if (!isAiMode) {
-            await fetch(`${apiHost}/game/${roomId}/stop-ai`, { method: "POST" });
+            await postGame(`/game/${roomId}/stop-ai`);
         }
 
-        const token = getAccessToken();
-        const initResponse = await fetch(`${apiHost}/game/${roomId}/init`, { 
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
+        const initResponse = await postGame(`/game/${roomId}/init`);
         if (!initResponse.ok) {
             throw new Error(`init failed (${initResponse.status})`);
         }
 
         if (isAiMode) {
-            const startAiResponse = await fetch(`${apiHost}/game/${roomId}/start-ai`, { method: "POST" });
+            const startAiResponse = await postGame(`/game/${roomId}/start-ai`);
             if (!startAiResponse.ok) {
                 throw new Error(`start-ai failed (${startAiResponse.status})`);
             }

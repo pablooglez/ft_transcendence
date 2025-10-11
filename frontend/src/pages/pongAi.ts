@@ -3,6 +3,7 @@
  * @brief Frontend logic for Pong game vs. an AI opponent.
  */
 import { io, Socket } from "socket.io-client";
+import { getAccessToken, refreshAccessToken } from "../state/authState";
 
 // COPIADO DE PONG.TS (con pequeñas modificaciones)
 
@@ -74,10 +75,28 @@ function cleanup() {
     isGameRunning = false;
 }
 
+// Helper: POST with Authorization header and one retry after token refresh
+async function postGame(path: string): Promise<Response> {
+    const makeReq = async () => {
+        const token = getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        return fetch(`${apiHost}${path}`, { method: "POST", headers });
+    };
+    let res = await makeReq();
+    if (res.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            res = await makeReq();
+        }
+    }
+    return res;
+}
+
 const handleKeyDown = (e: KeyboardEvent) => {
     if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
     if (e.key.toLowerCase() === "p") {
-        fetch(`${apiHost}/game/${roomId}/toggle-pause`, { method: "POST" });
+        postGame(`/game/${roomId}/toggle-pause`);
         return;
     } else {
         keysPressed.add(e.key);
@@ -109,7 +128,7 @@ export function pongAiHandlers() {
     });
 
     document.getElementById("startGameBtn")!.addEventListener("click", () => {
-        fetch(`${apiHost}/game/${roomId}/resume`, { method: "POST" });
+        postGame(`/game/${roomId}/resume`);
         (document.getElementById("startGameBtn")!).style.display = "none";
         // Wait for server event to set isGameRunning
     });
@@ -117,7 +136,7 @@ export function pongAiHandlers() {
     document.getElementById("playAgainBtn")!.addEventListener("click", () => {
         document.getElementById("winnerMessage")!.style.display = "none";
         document.getElementById("playAgainBtn")!.style.display = "none";
-        fetch(`${apiHost}/game/${roomId}/init`, { method: "POST" }).then(() => {
+        postGame(`/game/${roomId}/init`).then(() => {
             (document.getElementById("startGameBtn")!).style.display = "block";
         });
         isGameRunning = false;
@@ -141,15 +160,15 @@ function startGameVsAI() {
         socket.emit("joinRoom", { roomId });
 
         // Start AI on the backend game controller
-        fetch(`${apiHost}/game/${roomId}/start-ai`, { method: "POST" });
+        postGame(`/game/${roomId}/start-ai`);
     });
 
     const initGame = (currentRoomId: string) => {
-        fetch(`${apiHost}/game/${currentRoomId}/init`, { method: "POST" });
+        postGame(`/game/${currentRoomId}/init`);
         isGameRunning = false;
     };
 
-    // Cuando el backend confirma que la IA está lista, muestra el botón de Start
+    // doenst works
     socket.on("gameReady", () => {
         initGame(roomId);
         (document.getElementById("startGameBtn")!).style.display = "block";

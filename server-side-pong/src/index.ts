@@ -18,6 +18,7 @@ import {
 	resetGame,
 	deleteRoom,
 } from "./services/gameServices";
+import { WINNING_SCORE } from "./utils/pong-constants";
 
 const app = fastify({ logger: true });
 const io = new Server(app.server, { cors: { origin: "*" } });
@@ -72,7 +73,7 @@ app.register(cors, {
  * Register REST routes
  */
 gameController(app, io, rooms);
-pongAiController(app,io);
+pongAiController(app, io, rooms);
 
 /**
  * 	SOCKETS.IO
@@ -118,6 +119,31 @@ io.on("connection", (socket) =>
 			{
 				console.log(`Local room is full. Emitting 'gameReady'.`);
 				io.to('local').emit('gameReady', { roomId: 'local' });
+			}
+			return;
+		}
+
+		// If a custom roomId was provided (e.g., AI rooms), honor it
+		if (payload && payload.roomId && payload.roomId !== 'local') {
+			const customRoomId = payload.roomId;
+			socket.join(customRoomId);
+
+			let room = rooms.get(customRoomId);
+			if (!room) {
+				room = { id: customRoomId, players: [socket.id] };
+				rooms.set(customRoomId, room);
+			} else if (!room.players.includes(socket.id)) {
+				// Keep max 2 players
+				if (room.players.length < 2) room.players.push(socket.id);
+			}
+
+			const role: 'left' | 'right' = room.players[0] === socket.id ? 'left' : 'right';
+			socket.emit('roomJoined', { roomId: customRoomId, role });
+			console.log(`Socket ${socket.id} joined custom room ${customRoomId} as ${role}`);
+
+			if (room.players.length === 2) {
+				console.log(`Room ${customRoomId} is full. Emitting 'gameReady'.`);
+				io.to(customRoomId).emit('gameReady', { roomId: customRoomId });
 			}
 			return;
 		}

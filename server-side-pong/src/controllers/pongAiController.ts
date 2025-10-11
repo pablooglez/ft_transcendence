@@ -85,16 +85,19 @@ export async function pongAiController(fastify: FastifyInstance, io: Server)
                 if (!response.ok) throw new Error(`AI service error: ${response.statusText}`);
 
                 const { events } = await response.json() as { events: { type: string, key: string, atMs: number }[] };
+                console.log(`[AI] Received plan for room ${roomId}:`, events);
 
                 // Clean old plans before executing the new one
                 aiMovementTimers.get(roomId)?.forEach(clearTimeout);
                 aiMovementTimers.set(roomId, []);
 
                 // Execute the plan
+                console.log(`[AI] Executing plan for room ${roomId}...`);
                 for (const event of events)
                 {
                     const timer = setTimeout(() =>
                     {
+                        console.log(`[AI EXEC] Room ${roomId}: ${event.type} ${event.key}`);
                         const keys = aiKeyState.get(roomId);
                         if (!keys) return;
 

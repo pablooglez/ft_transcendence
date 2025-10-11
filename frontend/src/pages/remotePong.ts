@@ -3,6 +3,7 @@
  * @brief Frontend logic for Online Pong game (Random and Rooms)
  */
 import { io, Socket } from "socket.io-client";
+import { getAccessToken, refreshAccessToken } from "../state/authState";
 
 let socket: Socket;
 let ctx: CanvasRenderingContext2D | null = null;
@@ -91,10 +92,28 @@ function cleanup() {
     isGameRunning = false;
 }
 
+// Helper: POST with Authorization header and retry after refresh on 401
+async function postGame(path: string): Promise<Response> {
+    const makeReq = async () => {
+        const token = getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        return fetch(`${apiHost}${path}`, { method: "POST", headers });
+    };
+    let res = await makeReq();
+    if (res.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            res = await makeReq();
+        }
+    }
+    return res;
+}
+
 const handleKeyDown = (e: KeyboardEvent) => {
     if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
     if (e.key.toLowerCase() === "p" && roomId) {
-        fetch(`${apiHost}/game/${roomId}/toggle-pause`, { method: "POST" });
+        postGame(`/game/${roomId}/toggle-pause`);
     } else {
         keysPressed.add(e.key);
     }
@@ -127,7 +146,7 @@ export function remotePongHandlers() {
 
     document.getElementById("startGameBtn")!.addEventListener("click", () => {
         if (!roomId) return;
-        fetch(`${apiHost}/game/${roomId}/resume`, { method: "POST" });
+        postGame(`/game/${roomId}/resume`);
         (document.getElementById("startGameBtn")!).classList.add("hidden");
         // Do NOT set isGameRunning here. Wait for server 'gamePaused' event with paused=false.
     });
@@ -136,7 +155,7 @@ export function remotePongHandlers() {
         if (!roomId) return;
         document.getElementById("winnerMessage")!.style.display = "none";
         document.getElementById("playAgainBtn")!.classList.add("hidden");
-        fetch(`${apiHost}/game/${roomId}/init`, { method: "POST" }).then(() => {
+        postGame(`/game/${roomId}/init`).then(() => {
             (document.getElementById("startGameBtn")!).classList.remove("hidden");
         });
         isGameRunning = false;
@@ -181,7 +200,7 @@ function startGame() {
 
     socket.on("gameReady", (data: { roomId: string }) => {
         document.getElementById("roleInfo")!.textContent = `Room ${data.roomId} is ready. Opponent found!`;
-        fetch(`${apiHost}/game/${data.roomId}/init`, { method: "POST" });
+        postGame(`/game/${data.roomId}/init`);
         isGameRunning = false;
         // Only show start button to actual players
         if (playerRole === 'left' || playerRole === 'right') {
