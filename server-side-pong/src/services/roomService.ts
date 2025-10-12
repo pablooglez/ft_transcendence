@@ -14,6 +14,7 @@ export function createInitialState(): GameState {
 export function createRoom(): string {
   const roomId = generateUniqueId();
   roomStates.set(roomId, createInitialState());
+  console.log(`Room ${roomId} created with initial state.`);
   return roomId;
 }
 
