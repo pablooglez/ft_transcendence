@@ -202,6 +202,7 @@ export function updateGame(roomId?: string): GameState | undefined
 	if (state.scores.left >= WINNING_SCORE || state.scores.right >= WINNING_SCORE)
 	{
 		state.gameEnded = true;
+		state.gameEndedTimestamp = Date.now();
 		state.ball.dx = 0;
 		state.ball.dy = 0;
 	}

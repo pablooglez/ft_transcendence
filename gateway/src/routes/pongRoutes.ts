@@ -9,7 +9,7 @@ export default async function pongRoutes(fastify: FastifyInstance) {
   fastify.register(proxy, {
     upstream: "http://pong-service:7000",
     prefix: "/game",
-    rewritePrefix: "/game",
+    // rewritePrefix: "/game", // This was causing the issue
     
     preHandler: async (request, reply) => {
       fastify.log.info(`[PONG PROXY] Incoming request: ${request.method} ${request.url}`);

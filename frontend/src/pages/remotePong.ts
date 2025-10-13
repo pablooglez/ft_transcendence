@@ -116,7 +116,7 @@ async function postApi(path: string, method: "POST" | "GET" = "POST"): Promise<R
 const handleKeyDown = (e: KeyboardEvent) => {
     if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
     if (e.key.toLowerCase() === "p" && roomId) {
-        postApi(`/api/game/${roomId}/toggle-pause`);
+        postApi(`/game/${roomId}/toggle-pause`);
     } else {
         keysPressed.add(e.key);
     }
@@ -140,7 +140,7 @@ export function remotePongHandlers() {
     
     document.getElementById("createRoomBtn")!.addEventListener("click", async () => {
         try {
-            const response = await postApi("/api/rooms");
+            const response = await postApi("/game/rooms");
             if (!response.ok) throw new Error("Failed to create room");
             const { roomId: newRoomId } = await response.json();
             roomId = newRoomId;
@@ -166,7 +166,7 @@ export function remotePongHandlers() {
 
     document.getElementById("startGameBtn")!.addEventListener("click", () => {
         if (!roomId) return;
-        postApi(`/api/game/${roomId}/resume`);
+        postApi(`/game/${roomId}/resume`);
         (document.getElementById("startGameBtn")!).classList.add("hidden");
         // Do NOT set isGameRunning here. Wait for server 'gamePaused' event with paused=false.
     });
@@ -175,7 +175,7 @@ export function remotePongHandlers() {
         if (!roomId) return;
         document.getElementById("winnerMessage")!.style.display = "none";
         document.getElementById("playAgainBtn")!.classList.add("hidden");
-        postApi(`/api/game/${roomId}/init`).then(() => {
+        postApi(`/game/${roomId}/init`).then(() => {
             (document.getElementById("startGameBtn")!).classList.remove("hidden");
         });
         isGameRunning = false;
@@ -186,6 +186,8 @@ function prepareGameUI() {
     (document.getElementById("modeSelection")!).style.display = "none";
     (document.getElementById("pongCanvas")!).style.display = "block";
     (document.getElementById("gameInfo")!).style.display = "flex";
+    (document.getElementById("winnerMessage")!).style.display = "none";
+    (document.getElementById("playAgainBtn")!).classList.add("hidden");
 }
 
 function startGame(roomIdToJoin: string) {
@@ -224,7 +226,7 @@ function startGame(roomIdToJoin: string) {
 
     socket.on("gameReady", (data: { roomId: string }) => {
         document.getElementById("roleInfo")!.textContent = `Room ${data.roomId} is ready. Opponent found!`;
-        postApi(`/api/game/${data.roomId}/init`);
+        postApi(`/game/${data.roomId}/init`);
         isGameRunning = false;
         (document.getElementById("startGameBtn")!).classList.remove("hidden");
     });

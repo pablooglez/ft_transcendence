@@ -36,8 +36,16 @@ const rooms: Map<string, Room> = new Map();
 /**
  * Register CORS plugin
  */
+const whitelist = ["http://localhost:5173", "http://localhost:7000"];
 app.register(cors, {
-  origin: ["http://localhost:5173", "http://localhost:7000", "*"],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (whitelist.indexOf(origin) !== -1 || /http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):5173/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"), false);
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
 });
@@ -45,7 +53,7 @@ app.register(cors, {
 /**
  * Register REST routes
  */
-app.register(roomRoutes, { prefix: "/api" });
+app.register(roomRoutes);
 gameController(app, io, rooms);
 pongAiController(app, io);
 
@@ -135,6 +143,7 @@ io.on("connection", (socket) => {
             state.scores.left = WINNING_SCORE;
           }
           state.gameEnded = true;
+          state.gameEndedTimestamp = Date.now();
           io.to(roomId).emit("gameState", state);
         }
 
@@ -190,6 +199,22 @@ setInterval(() => {
     }
   }
 }, 1000 / 60);
+
+/**
+ * GARBAGE COLLECTOR
+ */
+setInterval(() => {
+	const now = Date.now();
+	for (const [roomId, state] of roomStates.entries()) {
+	  if (state.gameEnded && state.gameEndedTimestamp) {
+		if (now - state.gameEndedTimestamp > 2000) { // 2 seconds
+		  deleteRoom(roomId);
+		  rooms.delete(roomId);
+		  console.log(`Cleaned up ended room ${roomId}`);
+		}
+	  }
+	}
+  }, 5000); // Check every 5 seconds
 
 /**
  * START SERVER

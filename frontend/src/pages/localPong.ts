@@ -144,9 +144,7 @@ function togglePause() {
 const handleKeyUp = (e: KeyboardEvent) => keysPressed.delete(e.key);
 
 function gameLoop(isAiMode: boolean) {
-    if (!isGameRunning) return;
-
-    if (socket) {
+    if (isGameRunning && socket) {
         if (keysPressed.has("w")) socket.emit("moveUp", "left", roomId);
         if (keysPressed.has("s")) socket.emit("moveDown", "left", roomId);
 
@@ -175,6 +173,7 @@ export function localPongHandlers() {
 }
 
 function prepareGameUI(isAiMode: boolean) {
+    (document.getElementById("winnerMessage")!).style.display = "none";
     (document.getElementById("modeSelection")!).style.display = "none";
     (document.getElementById("gameInfo")!).style.display = "flex";
     (document.getElementById("scoreboard")!).classList.remove("hidden");

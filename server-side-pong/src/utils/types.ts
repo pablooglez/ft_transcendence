@@ -32,4 +32,5 @@ export interface GameState
 	ball: Ball;
 	scores: Scores;
 	gameEnded: boolean;
+	gameEndedTimestamp?: number; // Add this line
 }
