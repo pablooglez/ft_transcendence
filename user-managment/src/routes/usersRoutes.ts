@@ -4,7 +4,6 @@ import { registerController , register42Controller , usernameChanger , emailChan
 import { getVictoriesController, addVictoryController } from "../controllers/matchResultController";
 
 export default async (fastify: FastifyInstance) => {
-    fastify.get("/", getAllUsersController); // Get all users - MUST be before /:id
     fastify.post("/register", registerController);
     fastify.post("/register42", register42Controller);
     fastify.post("/changeUsername", usernameChanger);
