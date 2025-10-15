@@ -229,10 +229,13 @@ export async function rejectGameInvitation(invitationId: number) {
 export async function getUserProfile(userId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/${userId}`, {
+        const res = await fetch(`http://${apiHost}:8080/users/getUserById`, {
+            method: 'POST',
             headers: { 
-                "Authorization": `Bearer ${token}`
-            }
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id: userId })
         });
         if (!res.ok) {
             throw new Error(`HTTP error! Status: ${res.status}`);
@@ -246,16 +249,14 @@ export async function getUserProfile(userId: number) {
 
 export async function searchUsersByUsername(query: string) {
     try {
-        const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/search?q=${encodeURIComponent(query)}`, {
-            headers: { 
-                "Authorization": `Bearer ${token}`
-            }
-        });
-        if (!res.ok) {
-            throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-        return await res.json();
+        // Get all users and filter locally since backend doesn't have search endpoint
+        const response = await getAllUsers();
+        const allUsers = response.users || []; // Extract users array from response
+        const searchQuery = query.toLowerCase();
+        const filteredUsers = allUsers.filter((user: any) => 
+            user.username.toLowerCase().includes(searchQuery)
+        );
+        return filteredUsers;
     } catch (err) {
         console.error("Failed to search users:", err);
         throw err;
@@ -265,7 +266,7 @@ export async function searchUsersByUsername(query: string) {
 export async function getAllUsers() {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users`, {
+        const res = await fetch(`http://${apiHost}:8080/users/getAllUsers`, {
             headers: { 
                 "Authorization": `Bearer ${token}`
             }
