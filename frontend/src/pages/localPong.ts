@@ -10,10 +10,10 @@ let ctx: CanvasRenderingContext2D | null = null;
 let animationFrameId: number;
 let endGameTimeoutId: number | undefined;
 let isGameRunning = false;
-// Genera un roomId único por pestaña para permitir múltiples partidas locales concurrentes
+// Unique room id for multiple concurrent local games
 const roomId = `local_${crypto.randomUUID()}`;
 
-const apiHost = `http://${window.location.hostname}:7000`;
+const apiHost = `http://${window.location.hostname}:8080`;
 
 import {
 	WINNING_SCORE,
