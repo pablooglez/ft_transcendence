@@ -1,8 +1,9 @@
 export function getTournamentHtml(): string {
     return `
     <div class="tournament-container">
-        <h1>Tournament Mode</h1>
-        <div id="tournament-container">${getTournamentModeHtml()}</div>
+      <h1 id="tournamentTitle">Tournament Mode</h1>
+      <div id="tournament-container">${getTournamentModeHtml()}</div>
+      <button id="backButton" class="tournament-button">⬅ Back</button>   
     </div>
     `;
 }
@@ -19,10 +20,128 @@ export function getTournamentModeHtml(): string {
     `;
 }
 
+export function getTournamentRemoteModeHtml(): string {
+  return `
+      <div id="modeSelection">
+      <h2>Online Tournaments</h2>
+      <div>
+        <button id="new-tournament-btn" class="tournament-type-button">Create new tournament</button>
+        <button id="join-tournament-btn" class="tournament-type-button">Join tournament</button>
+      </div>
+    </div>
+  `;
+}
+
+export function getTournamentListHtml(): string {
+  return `
+  <div class="tournament-list-container">
+  <h2>🏆 Available Tournaments</h2>
+
+  <div class="tournaments-list-header">
+    <button id="create-tournament-list-btn" class="tournament-btn create">➕ Create Tournament</button>
+  </div>
+
+  <div id="tournaments-list" class="tournaments-list">
+    <div class="tournament-list-card">
+      <div class="tournament-info">
+        <span class="tournament-name">Tournament #1</span>
+        <span class="tournament-players">Players: 2 / 4</span>
+      </div>
+      <button class="tournament-btn">Join</button>
+    </div>
+
+    <div class="tournament-list-card">
+      <div class="tournament-info">
+        <span class="tournament-name">Tournament #2</span>
+        <span class="tournament-players">Players: 3 / 4</span>
+      </div>
+      <button class="tournament-btn">Join</button>
+    </div>
+
+    <div class="tournament-list-card">
+      <div class="tournament-info">
+        <span class="tournament-name">Tournament #3</span>
+        <span class="tournament-players">Players: 1 / 4</span>
+      </div>
+      <button class="tournament-btn">Join</button>
+    </div>
+
+    <div class="tournament-list-card">
+      <div class="tournament-info">
+        <span class="tournament-name">Tournament #2</span>
+        <span class="tournament-players">Players: 3 / 4</span>
+      </div>
+      <button class="tournament-btn">Join</button>
+    </div>
+
+    <div class="tournament-list-card">
+      <div class="tournament-info">
+        <span class="tournament-name">Tournament #3</span>
+        <span class="tournament-players">Players: 1 / 4</span>
+      </div>
+      <button class="tournament-btn">Join</button>
+    </div>
+
+    <div class="tournament-list-card">
+      <div class="tournament-info">
+        <span class="tournament-name">Tournament #2</span>
+        <span class="tournament-players">Players: 3 / 4</span>
+      </div>
+      <button class="tournament-btn">Join</button>
+    </div>
+
+    <div class="tournament-list-card">
+      <div class="tournament-info">
+        <span class="tournament-name">Tournament #3</span>
+        <span class="tournament-players">Players: 1 / 4</span>
+      </div>
+      <button class="tournament-btn">Join</button>
+    </div>
+  </div>
+  </div>
+  `;
+}
+
+export function getTournamentLobbyHTML(): string {
+  return `
+    <div class="lobby-container">
+  <h2>🏆 Tournament Lobby</h2>
+  <p id="tournament-name">Tournament: <strong>Autumn Cup</strong></p>
+  <p id="tournament-status">Status: <strong>Waiting for players...</strong></p>
+
+  <div class="lobby-players">
+    <h3>Joined Players</h3>
+    <ul id="player-list">
+                <li>pepe</li>
+          <li>manolo</li>
+          <li>paquito</li>
+          <li>churrita</li>
+
+    </ul>
+  </div>
+
+  <div class="lobby-actions">
+    <button id="join-btn" class="lobby-button">Join</button>
+    <button id="leave-btn" class="lobby-button">Leave</button>
+    <button id="start-btn" class="lobby-button start" disabled>Start Tournament</button>
+  </div>
+</div>
+  `;
+}
+
 export function getTournamentPlayersHtml(): string {
     return `
     <div class="tournament-players">
       <h2>Select the number of players</h2>
+        <div class="tournament-name-field">
+    <label for="tournamentName">Tournament Name</label>
+    <input
+      type="text"
+      id="tournamentName"
+      class="tournament-input"
+      placeholder="Enter tournament name..."
+    />
+  </div>
       <div class="players-buttons">
         <button id="fourPlayerBtn" class="tournament-button">4 Players</button>
         <button id="eightPlayerBtn" class="tournament-button">8 Players</button>
@@ -108,7 +227,8 @@ export function  getTournamentCanvasFourHtml(one: string, two: string, three: st
         <div class="tournament-match">${four}</div>
       </div>
     </div>
-  </div>
+    </div>
+    <button id="start-local-tournament-btn" class="tournament-button">Start Tournament</button>
     `;
 }
 
