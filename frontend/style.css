@@ -22,6 +22,18 @@ body {
   flex-direction: column;
 }
 
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track{
+  background: #181741;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #42F3FA;
+  border-radius: 10px;
+}
+
 /* ******************************** */
 /*              Header              */
 /* ******************************** */
@@ -1636,8 +1648,8 @@ header {
   border: 2px solid #42F3FA;
   border-radius: 15px;
   width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
+  /*max-width: 600px;
+  max-height: 80vh;*/
   box-shadow: 0 0 30px rgba(66, 243, 250, 0.5);
   position: relative;
   margin: auto;
@@ -1679,7 +1691,7 @@ header {
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 2rem;
 }
 
 .user-search-input {

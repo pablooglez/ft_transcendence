@@ -1,8 +1,16 @@
 import { WebSocket } from '@fastify/websocket';
 
+// WebSocket ready states (standard values)
+const WebSocketState = {
+    CONNECTING: 0,
+    OPEN: 1,
+    CLOSING: 2,
+    CLOSED: 3
+} as const;
+
 // Types for WebSocket messages
 interface WebSocketMessage {
-    type: 'message' | 'user_connected' | 'user_disconnected' | 'typing' | 'stop_typing' | 'identify' | 'message_delivered' | 'message_read';
+    type: 'message' | 'user_connected' | 'user_disconnected' | 'typing' | 'stop_typing' | 'identify' | 'message_delivered' | 'message_read' | 'connected_users_list';
     userId: number;
     conversationId?: number;
     content?: string;
@@ -38,6 +46,14 @@ export function addUserConnection(userId: number, websocket: WebSocket): void {
     
     // Notify other users that this user connected
     notifyUserConnected(userId);
+
+    // Send the current list of connected users to the newly connected user (excluding himself)
+    sendToUser(userId, {
+        type: 'connected_users_list',
+        userId: 0, // system
+        data: getConnectedUsers().filter(id => id !== userId),
+        timestamp: new Date().toISOString()
+    });
 }
 
 export function removeUserConnection(userId: number): void {
@@ -66,7 +82,7 @@ export function getConnectedUsers(): number[] {
 export function sendToUser(userId: number, message: WebSocketMessage): boolean {
     try {
         const connection = connectedUsers.get(userId);
-        if (connection && connection.websocket.readyState === WebSocket.OPEN) {
+        if (connection && connection.websocket.readyState === WebSocketState.OPEN) {
             connection.websocket.send(JSON.stringify(message));
             connection.lastActivity = new Date();
             return true;
@@ -349,7 +365,7 @@ export function cleanupStaleConnections(): void {
     
     connectedUsers.forEach((connection, userId) => {
         if (now - connection.lastActivity.getTime() > staleThreshold) {
-            if (connection.websocket.readyState !== WebSocket.OPEN) {
+            if (connection.websocket.readyState !== WebSocketState.OPEN) {
                 removeUserConnection(userId);
             }
         }
