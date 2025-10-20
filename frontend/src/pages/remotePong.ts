@@ -154,7 +154,24 @@ function gameLoop() {
 export function remotePongHandlers() {
     cleanup();
     ctx = (document.getElementById("pongCanvas") as HTMLCanvasElement).getContext("2d")!;
-    
+
+    // Detect if there's a roomId in the URL to auto-join
+    const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    let autoRoomId = urlParams.get('room');
+    if (!autoRoomId) {
+        // Fallback: read from localStorage if it exists
+        autoRoomId = localStorage.getItem('pendingRemoteRoomId') || null;
+        if (autoRoomId) {
+            // Clear to avoid re-entries
+            localStorage.removeItem('pendingRemoteRoomId');
+        }
+    }
+    if (autoRoomId) {
+        roomId = autoRoomId;
+        prepareGameUI();
+        startGame(autoRoomId);
+    }
+
     document.getElementById("createRoomBtn")!.addEventListener("click", async () => {
         try {
             // new endpoint for remote rooms
