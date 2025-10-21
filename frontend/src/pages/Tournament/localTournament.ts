@@ -180,16 +180,26 @@ export async function playTournamentMatch(match: {
     player2: string;
     onFinish: (winner: string) => void;
 }) {
+    // Prepare the UI for the match
     prepareGameUI(false);
-    await startTournamentGame(false, match.player1, match.player2);
 
-    const checkWinnerOrig = checkWinner;
+    // Set a global match ID so startTournamentGame can reference it if needed
     (window as any)._tournamentMatchId = match.id;
 
+    // Override the global onMatchFinished temporarily
     (window as any).onMatchFinished = (winnerName: string) => {
         console.log(`[Tournament] Match ${match.id} finished. Winner: ${winnerName}`);
+
+        // Call the match's onFinish callback with just the username
         match.onFinish(winnerName);
-    }
+
+        // Clean up global flags to avoid conflicts with next matches
+        delete (window as any)._tournamentMatchId;
+        delete (window as any).onMatchFinished;
+    };
+
+    // Start the game with the given players
+    await startTournamentGame(false, match.player1, match.player2);
 }
 
 async function startTournamentGame(isAiMode: boolean, playerLeft: string, playerRight: string) {
