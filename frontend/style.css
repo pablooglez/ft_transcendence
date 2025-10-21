@@ -1,3 +1,49 @@
+/* Profile Search Bar Centering and Styling */
+.profile-search-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2.5rem;
+}
+.profile-search-bar {
+  display: flex;
+  gap: 1rem;
+  background: #181741;
+  padding: 1.2rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(66,243,250,0.08);
+  margin-bottom: 1.5rem;
+}
+.profile-search-bar input[type="text"] {
+  background: #21225A;
+  color: #fff;
+  border: 1.5px solid #42F3FA;
+  border-radius: 8px;
+  padding: 0.7rem 1.2rem;
+  font-size: 1.1rem;
+  outline: none;
+  transition: border 0.2s;
+}
+.profile-search-bar input[type="text"]:focus {
+  border: 1.5px solid #fff;
+}
+.profile-search-bar button {
+  background: linear-gradient(90deg, #42F3FA 0%, #2c5364 100%);
+  color: #181741;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.profile-search-bar button:hover {
+  background: #42F3FA;
+  color: #21225A;
+}
+
 /* ********************************* */
 /*              General              */
 /* ********************************* */
@@ -2162,6 +2208,46 @@ header {
 }
 
 
+/* Profile Card Styles */
+.profile-card {
+  background: rgba(33, 34, 90, 0.95);
+  color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  padding: 2rem 2.5rem;
+  margin: 2rem auto;
+  max-width: 400px;
+  text-align: center;
+  border: 1.5px solid #42F3FA;
+}
+.profile-card h2 {
+  margin-top: 0;
+  color: #42F3FA;
+  font-size: 2rem;
+  letter-spacing: 1px;
+}
+.profile-card p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+/* Profile Stats Styles */
+.profile-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.profile-stats span {
+  background: #181741;
+  color: #42F3FA;
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(66,243,250,0.08);
+}
 
 
 

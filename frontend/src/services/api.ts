@@ -1,3 +1,58 @@
+// Get user stats by ID (calls backend endpoint)
+export async function getUserStatsById(id: number): Promise<{victories: number, defeats: number} | null> {
+    try {
+        const token = getAccessToken();
+        const res = await fetch(`http://${apiHost}:8080/users/getResults`, {
+            method: 'GET',
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "x-user-id": id.toString()
+            }
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch {
+        return null;
+    }
+}
+// Get user ID by username (calls backend endpoint)
+export async function getUserIdByUsername(username: string): Promise<number | null> {
+    try {
+        const token = getAccessToken();
+        const res = await fetch(`http://${apiHost}:8080/users/getUserByName`, {
+            method: 'POST',
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username })
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.id || null;
+    } catch {
+        return null;
+    }
+}
+
+// Get user data by ID (calls backend endpoint)
+export async function getUserById(id: number): Promise<any | null> {
+    try {
+        const token = getAccessToken();
+        const res = await fetch(`http://${apiHost}:8080/users/getUserById`, {
+            method: 'POST',
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id })
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch {
+        return null;
+    }
+}
 import { getAccessToken } from "../state/authState";
 
 const apiHost = window.location.hostname;

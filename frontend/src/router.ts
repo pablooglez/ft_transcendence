@@ -10,9 +10,13 @@ import { Settings } from "./pages/settings";
 import { localPongPage, localPongHandlers } from "./pages/localPong"; // Importar handlers
 import { remotePongPage, remotePongHandlers } from "./pages/remotePong"; // Importar handlers
 import { Game } from "./pages/game"
+import { Profile, profileHandlers } from "./pages/profile";
 
 export function router(route: string): string {
     switch (route) {
+        case "#/profile":
+            setTimeout(profileHandlers, 0);
+            return Profile();
         case "#/about":
             return About();
         case "#/register":
