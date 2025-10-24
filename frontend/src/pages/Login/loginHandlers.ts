@@ -10,7 +10,8 @@ export function userLoggedIn() {
     if (isLoggedIn()) {
       const userStr = localStorage.getItem("user");
       const user = JSON.parse(userStr!);
-      getElement("#login-name").textContent = `${user.user.username}`;
+      const username = user.user ? user.user.username : user.username;
+      getElement("#login-name").textContent = `${username}`;
       getElement("#login-dropdown").classList.remove("hidden");
     }
     else
@@ -31,11 +32,12 @@ export function setupLoginHandlers() {
     if (isLoggedIn()) {
       const userStr = localStorage.getItem("user");
       const user = JSON.parse(userStr!);
+      const actualUser = user.user || user;
       showElement(result);
       setText(result, "✅ You are already logged in");
       hideElement(form);
       getElement("#twofa-section").innerHTML = Enable2FAHtml();
-      enable2FAHandlers(user.id, user.username);
+      enable2FAHandlers(actualUser.id, actualUser.username);
       return ;
     }
     
