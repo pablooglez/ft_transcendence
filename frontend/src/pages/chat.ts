@@ -574,10 +574,8 @@ export function chatHandlers() {
 
         try {
             const profile = await getUserProfile(activeConversationId);
-            console.log('User profile:', profile);
-            
-            // Show profile modal
-            showProfileModal(profile);
+            // Navigate to profile page with username
+            window.location.hash = `#/profile?username=${profile.username}`;
         } catch (error) {
             console.error('Error loading profile:', error);
             alert('Failed to load user profile');

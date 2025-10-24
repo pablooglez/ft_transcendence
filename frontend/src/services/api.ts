@@ -35,6 +35,25 @@ export async function getUserIdByUsername(username: string): Promise<number | nu
     }
 }
 
+// Get user data by username (calls backend endpoint)
+export async function getUserByUsername(username: string): Promise<any | null> {
+    try {
+        const token = getAccessToken();
+        const res = await fetch(`http://${apiHost}:8080/users/getUserByName`, {
+            method: 'POST',
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username })
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch {
+        return null;
+    }
+}
+
 // Get user data by ID (calls backend endpoint)
 export async function getUserById(id: number): Promise<any | null> {
     try {

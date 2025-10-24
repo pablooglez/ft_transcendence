@@ -1,4 +1,4 @@
-import { getUserIdByUsername, getUserById, getUserStatsById } from '../services/api';
+import { getUserByUsername, getUserStatsById } from '../services/api';
 
 /**
  * Search for a user by username, then fetch and return their profile data by ID.
@@ -7,15 +7,11 @@ import { getUserIdByUsername, getUserById, getUserStatsById } from '../services/
  */
 export async function fetchUserProfileByUsername(username: string) {
   try {
-    const id = await getUserIdByUsername(username);
-    if (!id) {
+    const user = await getUserByUsername(username);
+    if (!user) {
       return { error: 'User not found' };
     }
-    const user = await getUserById(id);
-    if (!user) {
-      return { error: 'User data not found' };
-    }
-    const stats = await getUserStatsById(id);
+    const stats = await getUserStatsById(user.id);
     return { user, stats };
   } catch (err: any) {
     return { error: err.message || 'Unknown error' };
@@ -32,8 +28,9 @@ export function Profile(): string {
 }
 
 export function profileHandlers() {
-  const url = new URL(window.location.href);
-  let username = url.searchParams.get('username');
+  const hash = window.location.hash;
+  const urlParams = new URLSearchParams(hash.split('?')[1]);
+  let username = urlParams.get('username');
 
   const title = document.getElementById('profile-title');
   const resultDiv = document.getElementById('profile-result');
