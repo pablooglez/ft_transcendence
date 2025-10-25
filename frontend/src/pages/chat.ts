@@ -44,7 +44,6 @@ const UI_MESSAGES = {
     NO_CONVERSATIONS_FOUND: 'No conversations found. Send a message to start chatting!',
     LOADING_MESSAGES: 'Cargando mensajes...',
     ERROR_LOADING_MESSAGES: 'Error cargando mensajes',
-    NO_MESSAGES: 'No hay mensajes en esta conversación.',
     SEARCHING_USERS: 'Searching users...',
     LOADING_USERS: 'Loading users...',
     NO_USERS_FOUND: 'No users found',
@@ -277,37 +276,29 @@ export function chatHandlers() {
     // Initialize WebSocket connection
     initializeWebSocket();
 
-    // Handle message form submission
-    messageForm.addEventListener('submit', async (e: Event) => {
+    // Definir el handler fuera para poder eliminarlo antes de añadirlo
+    const handleMessageFormSubmit = async (e: Event) => {
         e.preventDefault();
-        
         if (!activeConversationId) {
             showErrorMessage(UI_MESSAGES.NO_CONVERSATION_SELECTED, messageResult);
             return;
         }
-        
         const messageContentInput = document.getElementById('message-content') as HTMLInputElement;
-        
         if (!messageContentInput) {
             showErrorMessage(UI_MESSAGES.MESSAGE_INPUT_NOT_FOUND, messageResult);
             return;
         }
-
-    const content = sanitizeText(messageContentInput.value.trim());
+        const content = sanitizeText(messageContentInput.value.trim());
         const currentUserId = getCurrentUserId();
         const recipientId = activeConversationId;
-
         if (!content) {
             showErrorMessage(UI_MESSAGES.ENTER_MESSAGE, messageResult);
             return;
         }
-
         try {
             showInfoMessage(UI_MESSAGES.SENDING_MESSAGE, messageResult);
-            
             // Send message via HTTP API (for persistence)
             const httpResult = await sendMessage(recipientId, content);
-            
             // Send message via WebSocket (for real-time delivery)
             const wsMessage: ChatMessage = {
                 type: 'message',
@@ -316,14 +307,11 @@ export function chatHandlers() {
                 content: content,
                 timestamp: new Date().toISOString()
             };
-            
             const wsSent = websocketClient.sendMessage(wsMessage);
-            
             if (wsSent) {
                 if (messageResult) {
                     messageResult.innerHTML = `<span class="success">${UI_MESSAGES.MESSAGE_SENT_SUCCESS}</span>`;
                 }
-                
                 // Add message to UI immediately (sent message)
                 addMessageToUI({
                     ...wsMessage,
@@ -334,19 +322,14 @@ export function chatHandlers() {
                     messageResult.innerHTML = `<span class="success">${UI_MESSAGES.MESSAGE_SENT_HTTP_ONLY}</span>`;
                 }
             }
-            
             if (messageResult) {
                 messageResult.className = 'message-result success';
             }
-            
             // Auto-refresh conversations list after sending message
             loadConversationsDebounced();
-            
             // Clear form
             messageContentInput.value = '';
-            
             console.log('Message sent:', { http: httpResult, websocket: wsSent });
-            
         } catch (error) {
             console.error('Error sending message:', error);
             if (messageResult) {
@@ -354,7 +337,11 @@ export function chatHandlers() {
                 messageResult.className = 'message-result error';
             }
         }
-    });
+    };
+
+    // Eliminar el listener previo antes de añadirlo
+    messageForm.removeEventListener('submit', handleMessageFormSubmit);
+    messageForm.addEventListener('submit', handleMessageFormSubmit);
 
     /**
      * Debounced conversation loading to prevent excessive API calls
@@ -399,6 +386,7 @@ export function chatHandlers() {
                     const conversationItem = document.querySelector(`[data-user-id="${conv.otherUserId}"] .conversation-name`);
                     if (conversationItem) {
                         conversationItem.textContent = username;
+                        conversationItem.setAttribute('data-username', username);
                     }
                     
                     // Update avatar with first letter of username
@@ -418,13 +406,19 @@ export function chatHandlers() {
                             item.classList.add('active');
                         }
                         
-                        item.addEventListener('click', async () => {
-                            // Get the real username (in case it's still loading)
-                            const userName = await getUsername(userId);
-                            // Visual highlight of the active conversation
-                            document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
-                            item.classList.add('active');
-                            selectConversation(userId, userName);
+                        item.addEventListener('click', async (e) => {
+                            const target = e.target as HTMLElement;
+                            const username = target.getAttribute('data-username') || await getUsername(userId);
+                            
+                            if (target.classList.contains('conversation-name')) {
+                                // Navigate to profile
+                                window.location.hash = `#/profile?username=${username}`;
+                            } else {
+                                // Select conversation
+                                document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+                                item.classList.add('active');
+                                selectConversation(userId, username);
+                            }
                         });
                     });
                 }, CHAT_CONFIG.USERNAME_LOADING_DELAY);
@@ -565,10 +559,8 @@ export function chatHandlers() {
 
         try {
             const profile = await getUserProfile(activeConversationId);
-            console.log('User profile:', profile);
-            
-            // Show profile modal
-            showProfileModal(profile);
+            // Navigate to profile page with username
+            window.location.hash = `#/profile?username=${profile.username}`;
         } catch (error) {
             console.error('Error loading profile:', error);
             alert('Failed to load user profile');
@@ -708,7 +700,7 @@ export function chatHandlers() {
         const messagesContainer = document.getElementById('messages-container');
         if (!messagesContainer) return;
         if (messages.length === 0) {
-            messagesContainer.innerHTML = '<div class="no-messages">No hay mensajes en esta conversación.</div>';
+            messagesContainer.innerHTML = '';
             return;
         }
         
@@ -1084,11 +1076,6 @@ export function chatHandlers() {
                     localStorage.setItem('pendingRemoteRoomId', result.roomId);
                     // Automatically redirect to the remote room
                     window.location.hash = `#/pong/remote?room=${result.roomId}`;
-                } else {
-                    if (messageResult) {
-                        messageResult.innerHTML = '<span class="success">🎮 Game invitation sent! (No roomId)"</span>';
-                        messageResult.className = 'message-result success';
-                    }
                 }
                 console.log('Game invitation sent:', result);
             } catch (error) {

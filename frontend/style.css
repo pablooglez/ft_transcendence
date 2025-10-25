@@ -756,9 +756,7 @@ header {
     box-sizing: border-box
 }
 
-.login-form input[type="submit"] {
-    
-}
+
 
 .login-form input[type="text"]:hover,
 .login-form input[type="password"]:hover{
@@ -831,9 +829,11 @@ header {
 }
 
 .gsi-material-button {
+  user-select: none;
   -moz-user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
+  appearance: none;
   -webkit-appearance: none;
   background-color: #181741;
   background-image: none;
@@ -1173,6 +1173,8 @@ header {
 }
 
 .conversation-name {
+  display: inline-block;
+  width: fit-content;
   font-weight: 500;
   margin-bottom: 4px;
   color: #42F3FA;
