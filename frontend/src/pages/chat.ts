@@ -44,7 +44,6 @@ const UI_MESSAGES = {
     NO_CONVERSATIONS_FOUND: 'No conversations found. Send a message to start chatting!',
     LOADING_MESSAGES: 'Cargando mensajes...',
     ERROR_LOADING_MESSAGES: 'Error cargando mensajes',
-    NO_MESSAGES: 'No hay mensajes en esta conversación.',
     SEARCHING_USERS: 'Searching users...',
     LOADING_USERS: 'Loading users...',
     NO_USERS_FOUND: 'No users found',
@@ -713,7 +712,7 @@ export function chatHandlers() {
         const messagesContainer = document.getElementById('messages-container');
         if (!messagesContainer) return;
         if (messages.length === 0) {
-            messagesContainer.innerHTML = '<div class="no-messages">No hay mensajes en esta conversación.</div>';
+            messagesContainer.innerHTML = '';
             return;
         }
         
