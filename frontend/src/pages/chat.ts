@@ -331,9 +331,13 @@ export function chatHandlers() {
             messageContentInput.value = '';
             console.log('Message sent:', { http: httpResult, websocket: wsSent });
         } catch (error) {
-            console.error('Error sending message:', error);
+            // console.error('Error sending message:', error); // Eliminado para evitar logs en consola
+            let errorMsg = '❌ Error sending message';
+            if (error instanceof Error && error.message.includes('400')) {
+                errorMsg = 'No puedes enviar mensajes a este usuario porque está bloqueado.';
+            }
             if (messageResult) {
-                messageResult.innerHTML = `<span class="error">❌ Error sending message: ${error}</span>`;
+                messageResult.innerHTML = `<span class=\"error\">${errorMsg}</span>`;
                 messageResult.className = 'message-result error';
             }
         }
