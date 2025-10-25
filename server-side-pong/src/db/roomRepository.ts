@@ -46,7 +46,7 @@ export function getRoom(roomId: string): { id: string, state: any, players: stri
   const roomStmt = db.prepare('SELECT id, state FROM rooms WHERE id = ?');
   const room = roomStmt.get(roomId);
   if (!room) return null;
-  const playersStmt = db.prepare('SELECT player_id FROM room_players WHERE room_id = ?');
+  const playersStmt = db.prepare('SELECT player_id FROM room_players WHERE room_id = ? ORDER BY ROWID');
   const players = playersStmt.all(roomId).map((row: any) => row.player_id);
   return { id: room.id, state: JSON.parse(room.state), players };
 }
@@ -54,7 +54,7 @@ export function getRoom(roomId: string): { id: string, state: any, players: stri
 export function getAllRooms(): { id: string, state: any, players: string[] }[] {
   const roomsStmt = db.prepare('SELECT id, state FROM rooms');
   const rooms = roomsStmt.all();
-  const playersStmt = db.prepare('SELECT room_id, player_id FROM room_players');
+  const playersStmt = db.prepare('SELECT room_id, player_id FROM room_players ORDER BY room_id, ROWID');
   const playersRows = playersStmt.all();
   const playersMap: Record<string, string[]> = {};
   for (const row of playersRows) {
