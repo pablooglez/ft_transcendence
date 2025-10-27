@@ -682,6 +682,51 @@ export function chatHandlers() {
         const contactName = document.getElementById('contact-name');
         if (contactName) contactName.textContent = otherUserName;
 
+        // Botón añadir/quitar amigo
+        let friendsSet = (window as any).friendsSet;
+        if (!friendsSet) {
+            friendsSet = new Set();
+            (window as any).friendsSet = friendsSet;
+        }
+        let addFriendBtn = document.getElementById('add-friend-btn') as HTMLButtonElement;
+        if (!addFriendBtn) {
+            const chatHeader = document.querySelector('.chat-header .contact-details');
+            if (chatHeader) {
+                addFriendBtn = document.createElement('button');
+                addFriendBtn.id = 'add-friend-btn';
+                addFriendBtn.className = 'add-friend-btn';
+                addFriendBtn.style.marginLeft = '10px';
+                chatHeader.appendChild(addFriendBtn);
+            }
+        }
+        function updateFriendBtn() {
+            if (addFriendBtn) {
+                if (friendsSet.has(otherUserId)) {
+                    addFriendBtn.textContent = 'Remove friend';
+                    addFriendBtn.style.background = '#ff4444';
+                } else {
+                    addFriendBtn.textContent = 'Add friend';
+                    addFriendBtn.style.background = '#25D366';
+                }
+                addFriendBtn.style.color = 'white';
+                addFriendBtn.style.border = 'none';
+                addFriendBtn.style.borderRadius = '6px';
+                addFriendBtn.style.padding = '4px 12px';
+                addFriendBtn.style.cursor = 'pointer';
+            }
+        }
+        updateFriendBtn();
+        if (addFriendBtn) {
+            addFriendBtn.onclick = () => {
+                if (friendsSet.has(otherUserId)) {
+                    friendsSet.delete(otherUserId);
+                } else {
+                    friendsSet.add(otherUserId);
+                }
+                updateFriendBtn();
+            };
+        }
+
         // Actualizar el estado online/offline dinámicamente
         const contactStatus = document.getElementById('contact-status');
         if (contactStatus) {
