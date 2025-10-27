@@ -1,4 +1,6 @@
+import { getAccessToken, isLoggedIn } from "../../state/authState";
 import { localTournamentPongPage, playTournamentMatch } from "./localTournament";
+import { createRemoteTournament, getRemoteTournaments, loadTournamentPlayers, openTournamentLobby } from "./remoteTournament";
 import { getTournamentLobbyHTML, getTournamentListHtml, getTournamentRemoteModeHtml, getTournamentAliasEightHtml, getTournamentCanvasFourHtml, getTournamentAliasFourHtml, getTournamentPlayersHtml } from "./tournamentTemplate";
 import { leftPlayerLoses, rightPlayerLoses } from "./tournamentUtils";
 
@@ -18,6 +20,7 @@ interface Tournament {
 }
 
 let currentTournament: Tournament | null = null;
+let currentTournamentId = 0;
 
 let currentPlayers = [];
 
@@ -43,6 +46,15 @@ function setTournamentContent(html: string) {
 
 function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function startRemoteTournamentFlow(tournamentData: any) {
+    let matches = tournamentData.matches;
+    const players = tournamentData.players;
+    if (!players || players.lenght === 0)
+        return ;
+
+    const playerMap = Object.fromEntries(players.map(p => [p.id, p]));
 }
 
 async function startLocalTournamentFlow(tournamentData: any) {
@@ -148,6 +160,69 @@ export async function tournamentHandlers() {
     const createOnlineTournamentButton = document.getElementById("new-tournament-btn");
     const backButton = document.getElementById("backButton");
     const startLocalTournamentBtn = document.getElementById("start-local-tournament-btn");
+    const cards = document.querySelectorAll(".tournament-list-card");
+    const joinBtn = document.getElementById("join-btn");
+    const leaveBtn = document.getElementById("leave-btn");
+    const startBtn = document.getElementById("start-btn");
+
+
+    cards.forEach(card => {
+        card.addEventListener("click", async () => {
+            currentTournamentId = Number(card.getAttribute("data-tournament-id"));
+            const html = await getTournamentLobbyHTML(currentTournamentId)
+            setTournamentContent(html);
+            setInterval(() => {
+                loadTournamentPlayers(currentTournamentId);
+            }, 5000);
+        });
+    });
+    
+    startBtn?.addEventListener("click", async () => {
+        const token = getAccessToken();
+        const tournament = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}/start-remote`, {
+            method: "POST",
+            headers: {                 
+                "Authorization": `Bearer ${token}`, },
+            body: JSON.stringify({ tournamentName, tournamentPlayers }),
+            credentials: "include", // include cookies
+        });
+
+        const tournamentData = await tournament.json();
+        console.log(tournamentData);
+        if (tournament.ok && tournamentData.shuffledPlayers)
+        {
+            const players = tournamentData.shuffledPlayers;
+            onTournamentCreated(tournamentData);
+            setTournamentContent(getTournamentCanvasFourHtml(players[0], players[1], players[2], players[3]));
+        }
+    })
+
+    joinBtn?.addEventListener("click", async () => {
+        const token = getAccessToken();
+        const response = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}/join`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+            credentials: "include",
+        });
+        const data = await response.json();
+    })
+    
+    leaveBtn?.addEventListener("click", async () => {
+        const token = getAccessToken();
+        const response = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}/leave`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+            credentials: "include",
+        });
+        const data = await response.json();
+        if (data.success) {
+            await loadTournamentPlayers(currentTournamentId);
+        }
+    });
 
     backButton?.addEventListener("click", () => {
     isOnline = 0;
@@ -168,25 +243,28 @@ export async function tournamentHandlers() {
     })
 
     onlineButton?.addEventListener("click", () => {
+        if (!isLoggedIn()) {
+            window.location.hash = "#/login";
+            return ;
+        }
         setTournamentContent(getTournamentRemoteModeHtml());
         isOnline = 1;
         tournamentHandlers();
     })
 
-    joinTournamentsButton?.addEventListener("click", () => {
-        setTournamentContent(getTournamentListHtml());
+    joinTournamentsButton?.addEventListener("click", async () => {
+        const tournamentList = await getRemoteTournaments();
+        setTournamentContent(getTournamentListHtml(tournamentList));
         const tournamentTitle = document.getElementById("tournamentTitle");
         if (tournamentTitle)
             tournamentTitle.style.marginBottom = "30px";
-        tournamentHandlers();
     })
 
     createOnlineTournamentButton?.addEventListener("click", () => {
         setTournamentContent(getTournamentPlayersHtml());
-        tournamentHandlers();
     })
 
-    fourPlayerBtn?.addEventListener("click", () => {
+    fourPlayerBtn?.addEventListener("click", async () => {
         if (!isOnline)
         {
             tournamentPlayers = 4;
@@ -195,9 +273,18 @@ export async function tournamentHandlers() {
                 tournamentName = name.value;
             setTournamentContent(getTournamentAliasFourHtml());
         }
-        else
-            setTournamentContent(getTournamentLobbyHTML());
-        tournamentHandlers();
+        else {
+            tournamentPlayers = 4;
+            const name = (document.querySelector<HTMLInputElement>("#tournamentName"));
+            if (name?.value)
+                tournamentName = name.value;
+            currentTournamentId = await createRemoteTournament(tournamentName, tournamentPlayers);
+            const html = await getTournamentLobbyHTML(currentTournamentId)
+            setTournamentContent(html);
+            setInterval(() => {
+                loadTournamentPlayers(currentTournamentId);
+            }, 5000);
+        }
     })
 
     if (fourPlayerForm) {

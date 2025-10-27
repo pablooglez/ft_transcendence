@@ -12,11 +12,23 @@ export interface TournamentCreateDTO {
     }[];
 }
 
+export interface RemoteTournamentCreateDTO {
+    id: number;
+    name: string;
+    mode: "remote";
+    creator_id?: number | null;
+    max_players: number;
+}
+
 export class TournamentRepository {
     static getAll() {
-        const stmt = db.prepare(`SELECT * FROM tournaments ORDER BY created_at DESC
-            `);
-        return stmt.all();    
+        const stmt = db.prepare(`
+            SELECT * FROM tournaments
+            WHERE mode = ?
+            ORDER BY created_at DESC
+        `);
+        const result = stmt.all("remote");
+        return result;
     }
 
     static getById(tournamentId: number) {
@@ -31,6 +43,24 @@ export class TournamentRepository {
         const matchesStmt = db.prepare(`SELECT * from matches WHERE tournament_id = ? ORDER BY round ASC`);
 
         return {...tournament, players: playersStmt.all(tournamentId), matches: matchesStmt.all(tournamentId),};
+    }
+
+
+    static createRemoteTournament(data: RemoteTournamentCreateDTO) {
+        const insertTournament = db.prepare(`
+            INSERT INTO tournaments (name, mode, creator_id, max_players)
+            VALUES (?, ?, ?, ?)`);
+
+        const result = insertTournament.run(
+            data.name,
+            data.mode,
+            data.creator_id || null,
+            data.max_players
+        );
+
+        const tournamentId = result.lastInsertRowid as number;
+
+        return this.getById(tournamentId);
     }
 
     static createTournament(data: TournamentCreateDTO) {
@@ -74,6 +104,14 @@ export class TournamentRepository {
             VALUES (?, ?, ?, ?)`
         );
         const result = stmt.run(tournamentId, round, player1_id, player2_id);
+        return result.lastInsertRowid as number;
+    }
+
+    static addRemoteMatch(tournamentId: number, round: number, player1_id: number, player2_id: number, roomId: string) {
+        const stmt = db.prepare(`INSERT INTO matches (tournament_id, round, player1_id, player2_id, roomId) 
+            VALUES (?, ?, ?, ?, ?)`
+        );
+        const result = stmt.run(tournamentId, round, player1_id, player2_id, roomId);
         return result.lastInsertRowid as number;
     }
 

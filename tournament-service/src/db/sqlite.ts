@@ -42,6 +42,7 @@ db.prepare(`
         winner_id INTEGER,
         score_player1 INTEGER,
         score_player2 INTEGER,
+        roomId TEXT DEFAULT 'local',
         status TEXT DEFAULT 'pending',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME,

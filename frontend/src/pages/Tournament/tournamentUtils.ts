@@ -1,3 +1,11 @@
+export interface RemoteTournamentCreateDTO {
+    id: number,
+    name: string;
+    mode: "remote";
+    creator_id?: number | null;
+    max_players: number;
+}
+
 export function leftPlayerLoses(id: string) {
     const currentPlayer = document.getElementById(id);
     if (!currentPlayer)
@@ -39,3 +47,16 @@ export function rightPlayerLoses(id: string) {
         (player as HTMLElement).style.borderColor = "#fa4242";
     })
 }
+
+export function renderTournamentCard(t: RemoteTournamentCreateDTO): string {
+    return `
+        <div class="tournament-list-card" data-tournament-id="${t.id}">
+            <div class="tournament-info">
+                <span class="tournament-name">${t.name}</span>
+                <span class="tournament-players">Players: 0 / ${t.max_players}</span>
+            </div>
+            <button class="tournament-btn">Join</button>
+        </div>
+    `
+}
+

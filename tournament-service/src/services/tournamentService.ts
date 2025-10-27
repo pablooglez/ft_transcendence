@@ -1,5 +1,6 @@
 import { TournamentRepository } from "../repositories/tournamentRepository";
 import { Tournament } from "../models/tournamentModel";
+import { PlayerRepository } from "../repositories/playerRepository";
 
 function shuffleArray<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
@@ -7,6 +8,11 @@ function shuffleArray<T>(array: T[]): T[] {
     [array[i], array[j]] = [array[j], array[i]];
   }
   return array;
+}
+
+export async function getAllTournaments() {
+  const tournaments = await TournamentRepository.getAll();
+  return (tournaments);
 }
 
 export async function createLocalTournament(data: {
@@ -25,6 +31,23 @@ export async function createLocalTournament(data: {
         });
 
     return { tournament, shuffledPlayers };
+}
+
+export async function createRemoteTournament(data: {
+    name: string;
+    maxPlayers: number;
+    creatorId: number;
+    }): Promise<{ tournament: Tournament; }> {
+
+
+        const tournament = await TournamentRepository.createRemoteTournament({
+            name: data.name,
+            mode: "remote",
+            creator_id: data.creatorId,
+            max_players: data.maxPlayers,
+        });
+
+    return { tournament };
 }
 
 export async function startTournament(tournamentId: number) {
@@ -74,11 +97,65 @@ export async function startTournament(tournamentId: number) {
   };
 }
 
+export async function startRemoteTournament(tournamentId: number) {
+  const tournament = TournamentRepository.getById(tournamentId);
+  if (!tournament)
+    throw new Error("Tournament not found");
+
+  const playersNum = PlayerRepository.countByTournamentId(tournamentId);
+
+  //if (playersNum !== 4)
+  //  throw new Error("Not enough players");
+
+  const players = PlayerRepository.getByTournamentId(tournamentId);
+
+  const matches: { id: number; player1_id: number; player2_id: number; round: number; status: string; roomId: string }[] = [];
+
+  for (let i = 0; i < players.length; i += 2) {
+    const player1 = players[i];
+    const player2 = players[i + 1];
+  
+  const response = await fetch(`http://pong-service:7000/remote-rooms`, {
+    method: "POST",
+  })
+
+  const remoteRoom = await response.json();
+
+  const matchId = TournamentRepository.addRemoteMatch(
+      tournamentId,
+      1, // round 1
+      player1.id,
+      player2.id,
+      remoteRoom.roomId,
+    );
+
+    matches.push({
+      id: matchId,
+      player1_id: player1.id,
+      player2_id: player2.id,
+      round: 1,
+      status: "pending",
+      roomId: remoteRoom.roomId,
+    });
+  }
+
+  TournamentRepository.updateStatus(tournamentId, "in_progress");
+
+  return {
+    tournament: {
+      id: tournament.id,
+      name: tournament.name,
+      max_players: tournament.max_players,
+      status: "in_progress",
+      current_round: 1,
+    },
+    players: players.map(p => ({ id: p.id, username: p.username })),
+    matches,
+  };
+}
+
 export async function advanceTournamentRound(tournamentId: number, winners: { id: number; username: string }[]) {
   const tournament = await TournamentRepository.getById(tournamentId);
-  console.log("Entra al principio");
-  console.log("Winners: ", winners);
-  console.log("tournamentId: ", tournamentId);
   if (!tournament)
     throw new Error("Tournament not found");
 
@@ -106,9 +183,6 @@ export async function advanceTournamentRound(tournamentId: number, winners: { id
   }[] = [];
 
   for (let i = 0; i < winners.length; i += 2) {
-    console.log("Entra");
-    console.log("player1:", winners[i]);
-    console.log("player2:", winners[i + 1]);
     const player1 = winners[i];
     const player2 = winners[i + 1];
     if (!player2)
@@ -138,3 +212,52 @@ export async function advanceTournamentRound(tournamentId: number, winners: { id
   };
 }
 
+export async function joinTournament(tournamentId: number, userId: number | null, username: string) {
+  const tournament = TournamentRepository.getById(tournamentId);
+  if (!tournament)
+    throw new Error("Tournament not found");
+
+  const playerCount = PlayerRepository.countByTournamentId(tournamentId);
+  if (playerCount >= tournament.max_players) {
+    throw new Error("Tournament is full");
+  }
+
+  if (userId) {
+    const existing = PlayerRepository.getByUserAndTournament(userId, tournamentId);
+    if (existing)
+      throw new Error("User already joined");
+  }
+
+  PlayerRepository.create({
+    username,
+    user_id: userId,
+    tournament_id: tournamentId,
+  });
+
+  return TournamentRepository.getById(tournamentId);
+}
+
+export async function leaveTournament(tournamentId: number, userId: number | null, username: string) {
+  const tournament = TournamentRepository.getById(tournamentId);
+  if (!tournament)
+    throw new Error("Tournament not found");
+
+  if (userId) {
+    const existing = PlayerRepository.getByUserAndTournament(userId, tournamentId);
+    if (existing) {
+      PlayerRepository.removeByUserAndTournament(userId, tournamentId);
+      return ({ success: true, message: "Player successfully removed" });
+    }
+    
+  }
+
+  return TournamentRepository.getById(tournamentId);
+}
+
+export async function getTournamentById(tournamentId: number) {
+  const tournament = TournamentRepository.getById(tournamentId);
+  if (!tournament)
+    throw new Error("Tournament not found");
+
+  return tournament;
+}

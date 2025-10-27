@@ -260,7 +260,6 @@ export function chatHandlers() {
 
     // Check essential elements
     if (!conversationsList || !messagesContainer) {
-        console.error('Essential chat elements not found in DOM');
         return;
     }
 
@@ -329,7 +328,6 @@ export function chatHandlers() {
             loadConversationsDebounced();
             // Clear form
             messageContentInput.value = '';
-            console.log('Message sent:', { http: httpResult, websocket: wsSent });
         } catch (error) {
             // console.error('Error sending message:', error); // Eliminado para evitar logs en consola
             let errorMsg = '❌ Error sending message';
@@ -427,7 +425,6 @@ export function chatHandlers() {
                     });
                 }, CHAT_CONFIG.USERNAME_LOADING_DELAY);
                 
-                console.log('Conversations loaded:', result);
             } else {
                 conversationsList.innerHTML = `
                     <div class="no-conversations">
@@ -437,7 +434,6 @@ export function chatHandlers() {
             }
             
         } catch (error) {
-            console.error('Error loading conversations:', error);
             conversationsList.innerHTML = `
                 <div class="no-conversations">
                     <p style="color: red;">❌ Error loading conversations: ${error}</p>
@@ -544,9 +540,7 @@ export function chatHandlers() {
             }
             messageResult.className = 'message-result success';
             
-            console.log(`User ${activeConversationId} ${action}ed successfully`);
         } catch (error) {
-            console.error(`Error ${action}ing user:`, error);
             messageResult.innerHTML = `<span class="error">❌ Failed to ${action} user</span>`;
             messageResult.className = 'message-result error';
         }
@@ -566,7 +560,6 @@ export function chatHandlers() {
             // Navigate to profile page with username
             window.location.hash = `#/profile?username=${profile.username}`;
         } catch (error) {
-            console.error('Error loading profile:', error);
             alert('Failed to load user profile');
         }
     });
@@ -580,12 +573,10 @@ export function chatHandlers() {
         try {
             const userId = getCurrentUserId();
             
-            console.log(`Connecting to WebSocket with userId: ${userId}`);
             await websocketClient.connect(userId);
             
             // Set up message handler for incoming messages
             websocketClient.onMessage((message: ChatMessage) => {
-                console.log('Received WebSocket message:', message);
 
                 if (message.type === 'message') {
                     //  Add all messages to UI (received message)
@@ -599,20 +590,17 @@ export function chatHandlers() {
                     // Track user connection
                     if (message.userId) {
                         connectedUsersSet.add(message.userId);
-                        console.log(`User ${message.userId} connected. Online users:`, Array.from(connectedUsersSet));
                     }
                 } else if (message.type === 'user_disconnected') {
                     // Track user disconnection
                     if (message.userId) {
                         connectedUsersSet.delete(message.userId);
-                        console.log(`User ${message.userId} disconnected. Online users:`, Array.from(connectedUsersSet));
                     }
                 } else if (message.type === 'connected_users_list') {
                     // Inicializa el Set de usuarios conectados con la lista recibida
                     connectedUsersSet.clear();
                     if (Array.isArray(message.data)) {
                         message.data.forEach((userId: number) => connectedUsersSet.add(userId));
-                        console.log('Lista inicial de usuarios online:', Array.from(connectedUsersSet));
                     }
                 }
             });
@@ -621,7 +609,6 @@ export function chatHandlers() {
             updateConnectionStatus(true);
             
         } catch (error) {
-            console.error('Failed to connect to WebSocket:', error);
             updateConnectionStatus(false);
         }
     }
@@ -634,13 +621,10 @@ export function chatHandlers() {
         try {
             if (result && result.room_id) {
                 window.location.hash = `#/pong/remote?room=${result.room_id}`;
-                console.log('Redirected to remote pong room:', result.room_id);
             } else {
                 window.location.hash = '#/game';
-                console.log('Redirected to game selection. Opponent data:', result);
             }
         } catch (error) {
-            console.error('Error handling game redirection:', error);
             // Fallback: show error message
             if (messageResult) {
                 messageResult.innerHTML = '<span class="error">❌ Failed to redirect to game</span>';
@@ -709,7 +693,6 @@ export function chatHandlers() {
         }
         
         const currentUserId = getCurrentUserId();
-        console.log('🔍 Display Messages - Current User ID:', currentUserId);
         
         messagesContainer.innerHTML = messages.map(msg => {
             // Show sent/received based on current user ID
@@ -849,11 +832,9 @@ export function chatHandlers() {
                 }
             }
         } catch (error) {
-            console.error('Error parsing user from localStorage:', error);
         }
 
         // If no authentication found, redirect to login
-        console.warn('No authentication found, redirecting to login');
         window.location.hash = '#/login';
         return 0; // Return 0 to indicate no user
     }
@@ -877,7 +858,6 @@ export function chatHandlers() {
             usernameCache.set(userId, username);
             return username;
         } catch (error) {
-            console.error(`Failed to get username for user ${userId}:`, error);
             // Fallback to User ID format
             const fallback = `User ${userId}`;
             usernameCache.set(userId, fallback);
@@ -942,7 +922,6 @@ export function chatHandlers() {
                 invitationsSection.style.display = 'none';
             }
         } catch (error) {
-            console.error('Error loading game invitations:', error);
         }
     }
 
@@ -974,7 +953,6 @@ export function chatHandlers() {
     async function handleRejectInvitation(invitationId: number) {
         try {
             await rejectGameInvitation(invitationId);
-            console.log('Invitation rejected');
             
             // Show rejection message
             messageResult.innerHTML = '<span class="success">❌ Invitation rejected</span>';
@@ -988,7 +966,6 @@ export function chatHandlers() {
                 messageResult.innerHTML = '';
             }, 3000);
         } catch (error: any) {
-            console.error('Error rejecting invitation:', error);
             messageResult.innerHTML = `<span class="error">❌ Error rejecting invitation</span>`;
             messageResult.className = 'message-result error';
         }
@@ -1003,7 +980,6 @@ export function chatHandlers() {
         const victories = document.getElementById('profile-victories');
         
         if (!modal || !username || !userId || !avatar || !victories) {
-            console.error('Profile modal elements not found');
             return;
         }
 
@@ -1081,7 +1057,6 @@ export function chatHandlers() {
                     // Automatically redirect to the remote room
                     window.location.hash = `#/pong/remote?room=${result.roomId}`;
                 }
-                console.log('Game invitation sent:', result);
             } catch (error) {
                 const errMsg = (error instanceof Error) ? error.message : String(error);
                 if (messageResult) {
@@ -1115,7 +1090,6 @@ export function chatHandlers() {
             try {
                 users = await searchUsersByUsername(query);
             } catch (error) {
-                console.warn('Search API not available, filtering from known users:', error);
                 // Fallback: filter from available users
                 const allUsers = await getAvailableUsers();
                 users = allUsers.filter((user: any) => 
@@ -1157,7 +1131,6 @@ export function chatHandlers() {
                 userSearchResults.innerHTML = '<div class="no-results">No users found</div>';
             }
         } catch (error) {
-            console.error('Error searching users:', error);
             userSearchResults.innerHTML = '<div class="error">Error searching users</div>';
         }
     }
@@ -1210,7 +1183,6 @@ export function chatHandlers() {
                 userSearchResults.innerHTML = '<div class="no-results">No users found</div>';
             }
         } catch (error) {
-            console.error('Error loading users:', error);
             userSearchResults.innerHTML = '<div class="error">Error loading users</div>';
         }
     }
@@ -1277,7 +1249,6 @@ export function chatHandlers() {
             
             return [];
         } catch (error) {
-            console.error('Error getting available users:', error);
             // Return empty array instead of hardcoded fallback users
             return [];
         }

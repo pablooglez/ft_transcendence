@@ -1,3 +1,6 @@
+import { getRemoteTournamentData } from "./remoteTournament";
+import { renderTournamentCard } from "./tournamentUtils";
+
 export function getTournamentHtml(): string {
     return `
     <div class="tournament-container">
@@ -32,92 +35,36 @@ export function getTournamentRemoteModeHtml(): string {
   `;
 }
 
-export function getTournamentListHtml(): string {
+export function getTournamentListHtml(tournaments: any): string {
+  const tournamentCardsHtml = tournaments.map(renderTournamentCard).join("");
+  
   return `
-  <div class="tournament-list-container">
-  <h2>🏆 Available Tournaments</h2>
+    <div class="tournament-list-container">
+      <h2>🏆 Available Tournaments</h2>
 
-  <div class="tournaments-list-header">
-    <button id="create-tournament-list-btn" class="tournament-btn create">➕ Create Tournament</button>
-  </div>
-
-  <div id="tournaments-list" class="tournaments-list">
-    <div class="tournament-list-card">
-      <div class="tournament-info">
-        <span class="tournament-name">Tournament #1</span>
-        <span class="tournament-players">Players: 2 / 4</span>
+      <div class="tournaments-list-header">
+        <button id="create-tournament-list-btn" class="tournament-btn create">➕ Create Tournament</button>
       </div>
-      <button class="tournament-btn">Join</button>
-    </div>
 
-    <div class="tournament-list-card">
-      <div class="tournament-info">
-        <span class="tournament-name">Tournament #2</span>
-        <span class="tournament-players">Players: 3 / 4</span>
+      <div id="tournaments-list" class="tournaments-list">
+        ${tournamentCardsHtml}
       </div>
-      <button class="tournament-btn">Join</button>
     </div>
-
-    <div class="tournament-list-card">
-      <div class="tournament-info">
-        <span class="tournament-name">Tournament #3</span>
-        <span class="tournament-players">Players: 1 / 4</span>
-      </div>
-      <button class="tournament-btn">Join</button>
-    </div>
-
-    <div class="tournament-list-card">
-      <div class="tournament-info">
-        <span class="tournament-name">Tournament #2</span>
-        <span class="tournament-players">Players: 3 / 4</span>
-      </div>
-      <button class="tournament-btn">Join</button>
-    </div>
-
-    <div class="tournament-list-card">
-      <div class="tournament-info">
-        <span class="tournament-name">Tournament #3</span>
-        <span class="tournament-players">Players: 1 / 4</span>
-      </div>
-      <button class="tournament-btn">Join</button>
-    </div>
-
-    <div class="tournament-list-card">
-      <div class="tournament-info">
-        <span class="tournament-name">Tournament #2</span>
-        <span class="tournament-players">Players: 3 / 4</span>
-      </div>
-      <button class="tournament-btn">Join</button>
-    </div>
-
-    <div class="tournament-list-card">
-      <div class="tournament-info">
-        <span class="tournament-name">Tournament #3</span>
-        <span class="tournament-players">Players: 1 / 4</span>
-      </div>
-      <button class="tournament-btn">Join</button>
-    </div>
-  </div>
-  </div>
-  `;
+`
 }
 
-export function getTournamentLobbyHTML(): string {
+export async function getTournamentLobbyHTML(tournamentId: number): Promise<string> {
+  const tournament = await getRemoteTournamentData(tournamentId);
+  
   return `
     <div class="lobby-container">
   <h2>🏆 Tournament Lobby</h2>
-  <p id="tournament-name">Tournament: <strong>Autumn Cup</strong></p>
-  <p id="tournament-status">Status: <strong>Waiting for players...</strong></p>
+  <p id="tournament-name">Tournament: <strong>${tournament.name}</strong></p>
+  <p id="tournament-status">Status: <strong>${tournament.status}</strong></p>
 
   <div class="lobby-players">
     <h3>Joined Players</h3>
-    <ul id="player-list">
-                <li>pepe</li>
-          <li>manolo</li>
-          <li>paquito</li>
-          <li>churrita</li>
-
-    </ul>
+    <ul id="player-list"></ul>
   </div>
 
   <div class="lobby-actions">
