@@ -588,11 +588,13 @@ export function chatHandlers() {
                     if (message.userId) {
                         connectedUsersSet.add(message.userId);
                         updateActiveContactStatus();
+                        updateUserSearchModalStatus();
                     }
                 } else if (message.type === 'user_disconnected') {
                     if (message.userId) {
                         connectedUsersSet.delete(message.userId);
                         updateActiveContactStatus();
+                        updateUserSearchModalStatus();
                     }
                 } else if (message.type === 'connected_users_list') {
                     connectedUsersSet.clear();
@@ -600,8 +602,23 @@ export function chatHandlers() {
                         message.data.forEach((userId: number) => connectedUsersSet.add(userId));
                     }
                     updateActiveContactStatus();
+                    updateUserSearchModalStatus();
                 }
             });
+
+            // Actualiza el estado online/offline en el modal de búsqueda de usuarios si está abierto
+            async function updateUserSearchModalStatus() {
+                const modal = document.getElementById('new-chat-modal');
+                if (modal && modal.style.display !== 'none') {
+                    const searchInput = document.getElementById('user-search') as HTMLInputElement;
+                    const query = searchInput ? searchInput.value.trim() : '';
+                    if (query) {
+                        await handleUserSearch(query);
+                    } else {
+                        await loadAllUsers();
+                    }
+                }
+            }
 
             // Función para actualizar el estado del contacto activo
             function updateActiveContactStatus() {
@@ -1224,9 +1241,9 @@ export function chatHandlers() {
                 </div>
                 <div class="user-info">
                     <div class="user-name">${user.username}</div>
-                    <div class="user-email">${user.email}</div>
+                    <div class="user-status-text" style="display:block;text-align:center;color:${isOnline ? '#25D366' : '#ff4444'};margin-top:4px;">${isOnline ? 'Online' : 'Offline'}</div>
                 </div>
-                <button class="start-conversation-btn" data-user-id="${user.id}" data-username="${user.username}">
+                <button class="start-conversation-btn" data-user-id="${user.id}" data-username="${user.username}" style="background:${isOnline ? '#25D366' : '#ff4444'};color:white;">
                     Chat
                 </button>
             </div>
