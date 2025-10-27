@@ -150,7 +150,7 @@ export function Chat(): string {
                         <div class="contact-avatar">👤</div>
                         <div class="contact-details">
                             <h3 id="contact-name">Select a conversation</h3>
-                            <span id="contact-status">Online</span>
+                            <span id="contact-status"></span>
                         </div>
                     </div>
                     <div class="chat-actions">
@@ -576,34 +576,48 @@ export function chatHandlers() {
             await websocketClient.connect(userId);
             
             // Set up message handler for incoming messages
-            websocketClient.onMessage((message: ChatMessage) => {
 
+            websocketClient.onMessage((message: ChatMessage) => {
                 if (message.type === 'message') {
-                    //  Add all messages to UI (received message)
                     addMessageToUI({
                         ...message,
                         isSent: false
                     });
-                    // Auto-refresh conversations list to show new message/conversation
                     loadConversationsDebounced();
                 } else if (message.type === 'user_connected') {
-                    // Track user connection
                     if (message.userId) {
                         connectedUsersSet.add(message.userId);
+                        updateActiveContactStatus();
                     }
                 } else if (message.type === 'user_disconnected') {
-                    // Track user disconnection
                     if (message.userId) {
                         connectedUsersSet.delete(message.userId);
+                        updateActiveContactStatus();
                     }
                 } else if (message.type === 'connected_users_list') {
-                    // Inicializa el Set de usuarios conectados con la lista recibida
                     connectedUsersSet.clear();
                     if (Array.isArray(message.data)) {
                         message.data.forEach((userId: number) => connectedUsersSet.add(userId));
                     }
+                    updateActiveContactStatus();
                 }
             });
+
+            // Función para actualizar el estado del contacto activo
+            function updateActiveContactStatus() {
+                if (activeConversationId != null) {
+                    const contactStatus = document.getElementById('contact-status');
+                    if (contactStatus) {
+                        if (connectedUsersSet.has(activeConversationId)) {
+                            contactStatus.textContent = 'Online';
+                            contactStatus.style.color = '#25D366';
+                        } else {
+                            contactStatus.textContent = 'Offline';
+                            contactStatus.style.color = '#ff4444';
+                        }
+                    }
+                }
+            }
             
             // Update connection status in UI
             updateConnectionStatus(true);
@@ -646,9 +660,22 @@ export function chatHandlers() {
         activeConversationId = otherUserId;
         activeConversationName = otherUserName;
 
+
         // Update the chat header
         const contactName = document.getElementById('contact-name');
         if (contactName) contactName.textContent = otherUserName;
+
+        // Actualizar el estado online/offline dinámicamente
+        const contactStatus = document.getElementById('contact-status');
+        if (contactStatus) {
+            if (connectedUsersSet.has(otherUserId)) {
+                contactStatus.textContent = 'Online';
+                contactStatus.style.color = '#25D366';
+            } else {
+                contactStatus.textContent = 'Offline';
+                contactStatus.style.color = '#ff4444';
+            }
+        }
 
         // Show and update block button
         const blockButton = document.getElementById('block-user-btn') as HTMLButtonElement;
