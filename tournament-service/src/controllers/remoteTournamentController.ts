@@ -12,13 +12,23 @@ export async function updateRemoteMatchResultController(req: FastifyRequest, rep
             return reply.code(400).send({ error: "winnerId is required" });
         }
 
-        // Update the match result
+        // Read existing match to enforce only one name
+        const existingMatch = TournamentRepository.getMatchById(Number(matchId));
+        if (!existingMatch) {
+            return reply.code(404).send({ error: "Match not found" });
+        }
+        if (existingMatch.status === 'completed') {
+            console.log(`[REMOTE] Match ${matchId} already completed, ignoring duplicate report`);
+            return reply.code(200).send({ message: "Match already reported" });
+        }
+
+        // Update match result (first writer wins). Repository currently updates directly.
         TournamentRepository.updateMatchResult(Number(matchId), winnerId);
 
-        // Get the match to find the tournament
+        // Re-read match and tournament
         const match = TournamentRepository.getMatchById(Number(matchId));
         if (!match) {
-            return reply.code(404).send({ error: "Match not found" });
+            return reply.code(404).send({ error: "Match not found after update" });
         }
 
         const tournamentId = match.tournament_id;
@@ -27,14 +37,13 @@ export async function updateRemoteMatchResultController(req: FastifyRequest, rep
             return reply.code(404).send({ error: "Tournament not found" });
         }
 
-        // Verify this is a remote tournament
         if (tournament.mode !== 'remote') {
             return reply.code(400).send({ error: "This controller is only for remote tournaments" });
         }
 
         console.log(`[REMOTE] Processing match result for remote tournament ${tournamentId}`);
 
-        // Check if all matches in the current round are completed
+        // Check round completion
         const allMatches = TournamentRepository.getMatchesByTournamentId(tournamentId);
         const currentRound = match.round;
         const roundMatches = allMatches.filter((m: any) => m.round === currentRound);
@@ -43,55 +52,68 @@ export async function updateRemoteMatchResultController(req: FastifyRequest, rep
         console.log(`[REMOTE] Round ${currentRound}: ${completedMatches.length}/${roundMatches.length} matches completed`);
 
         if (completedMatches.length === roundMatches.length) {
-            // All matches in the round are completed, advance to next round
-            console.log(`[REMOTE] All matches in round ${currentRound} completed, advancing remote tournament`);
+            // Prevent double-advancing: if next-round matches already exist, skip advance
+            const nextRoundExists = allMatches.some((m: any) => m.round === currentRound + 1);
+            if (nextRoundExists) {
+                console.log(`[REMOTE] Next round already created for tournament ${tournamentId}, skipping advance`);
+            } else {
+                console.log(`[REMOTE] All matches in round ${currentRound} completed, advancing remote tournament`);
 
-            // Collect winners
-            const winners = completedMatches.map((m: any) => {
-                const winnerUsername = m.winner_id === m.player1_id ? m.player1_username : m.player2_username;
-                return {
-                    id: m.winner_id,
-                    username: winnerUsername
-                };
-            });
+                // Collect winners
+                const winners = completedMatches.map((m: any) => {
+                    const winnerUsername = m.winner_id === m.player1_id ? m.player1_username : m.player2_username;
+                    return {
+                        id: m.winner_id,
+                        username: winnerUsername
+                    };
+                });
 
-            console.log('[REMOTE] Round winners:', winners);
+                console.log('[REMOTE] Round winners:', winners);
 
-            // Advance the tournament
-            const nextRoundData = await TournamentService.advanceTournamentRound(tournamentId, winners);
-            console.log('[REMOTE] Next round created:', nextRoundData);
+                // Advance the tournament (create next round matches for remote tournaments)
+                const nextRoundData = await TournamentService.advanceRemoteTournamentRound(tournamentId, winners);
+                console.log('[REMOTE] Next round created:', nextRoundData);
 
-            // Create REMOTE rooms for the new round matches
-            if (nextRoundData.matches && nextRoundData.matches.length > 0) {
-                console.log(`[REMOTE] Creating REMOTE rooms for ${nextRoundData.matches.length} matches in round ${nextRoundData.tournament.current_round}`);
+                // Create REMOTE rooms for the new round matches (if any) using the gateway
+                const GATEWAY_URL = process.env.GATEWAY_URL || 'http://gateway:8080';
+                if (nextRoundData.matches && nextRoundData.matches.length > 0) {
+                    console.log(`[REMOTE] Creating REMOTE rooms for ${nextRoundData.matches.length} matches in round ${nextRoundData.tournament.current_round}`);
 
-                for (const match of nextRoundData.matches) {
-                    try {
-                        console.log(`[REMOTE] Creating remote room for match ${match.id}...`);
-                        // Make request to gateway to create REMOTE room
-                        const roomResponse = await fetch('http://gateway:8080/game/remote-rooms', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
+                    for (const newMatch of nextRoundData.matches) {
+                        try {
+                            // Skip if repository already set a roomId (idempotent)
+                            if (newMatch.roomId || newMatch.room_id) {
+                                console.log(`[REMOTE] Match ${newMatch.id} already has roomId ${newMatch.roomId || newMatch.room_id}, skipping.`);
+                                continue;
                             }
-                        });
 
-                        if (roomResponse.ok) {
-                            const { roomId } = await roomResponse.json();
-                            console.log(`[REMOTE] Created remote room ${roomId} for match ${match.id}`);
+                            console.log(`[REMOTE] Creating remote room for match ${newMatch.id} via ${GATEWAY_URL}/game/remote-rooms`);
+                            const roomResponse = await fetch(`${GATEWAY_URL}/game/remote-rooms`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({}) // keep body if gateway expects payload
+                            });
 
-                            // Update the match with the roomId
-                            TournamentRepository.updateMatchRoomId(match.id, roomId);
-                        } else {
-                            const errorText = await roomResponse.text();
-                            console.error(`[REMOTE] Failed to create remote room for match ${match.id}:`, roomResponse.status, errorText);
+                            if (roomResponse.ok) {
+                                const body = await roomResponse.json();
+                                const roomId = body.roomId || body.id || body.room_id;
+                                if (!roomId) {
+                                    console.error(`[REMOTE] No roomId in response for match ${newMatch.id}`);
+                                    continue;
+                                }
+                                console.log(`[REMOTE] Created remote room ${roomId} for match ${newMatch.id}`);
+                                TournamentRepository.updateMatchRoomId(newMatch.id, roomId);
+                            } else {
+                                const errorText = await roomResponse.text();
+                                console.error(`[REMOTE] Failed to create remote room for match ${newMatch.id}:`, roomResponse.status, errorText);
+                            }
+                        } catch (error) {
+                            console.error(`[REMOTE] Error creating remote room for match ${newMatch.id}:`, error);
                         }
-                    } catch (error) {
-                        console.error(`[REMOTE] Error creating remote room for match ${match.id}:`, error);
                     }
-                }
-            }
-        }
+                } // end create rooms
+            } // end else nextRound not exists
+        } // end if round completed
 
         return reply.code(200).send({ message: "Remote match result updated successfully" });
     } catch (error) {

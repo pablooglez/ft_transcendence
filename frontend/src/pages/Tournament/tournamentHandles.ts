@@ -405,7 +405,6 @@ export async function tournamentHandlers() {
 
     createOnlineTournamentButton?.addEventListener("click", () => {
         setTournamentContent(getTournamentPlayersHtml());
-        tournamentHandlers();
     })
 
     fourPlayerBtn?.addEventListener("click", async () => {

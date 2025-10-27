@@ -1,5 +1,4 @@
 import db from "../db/sqlite"
-
 export interface TournamentCreateDTO {
     name: string;
     mode: "local" | "remote";
@@ -123,13 +122,14 @@ export class TournamentRepository {
         stmt.run(roomId, matchId);
     }
 
-    static updateMatchResult(matchId: number, winnerId: number) {
+    static updateMatchResult(matchId: number, winnerId: number): boolean {
         const stmt = db.prepare(`
             UPDATE matches
             SET winner_id = ?, status = 'completed', updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
+            WHERE id = ? AND (status IS NULL OR status != 'completed')
         `);
-        stmt.run(winnerId, matchId);
+        const result = stmt.run(winnerId, matchId);
+        return result.changes > 0;
     }
 
     static deleteTournament(id: number) {

@@ -298,18 +298,24 @@ function checkWinner() {
         sendVictoryToUserManagement().catch(err => console.error('Failed to send victory:', err));
     }
 
-    // Report match result
-    if (matchId) {
-        const winnerPlayerId = (playerRole === winnerSide) ? (isPlayer1 ? player1Id : player2Id) : (isPlayer1 ? player2Id : player1Id);
+    // Report match result - only the winner client should report to reduce duplicate reports
+    if (matchId && playerRole === winnerSide) {
+        const winnerPlayerId = (isPlayer1 ? player1Id : player2Id);
         if (winnerPlayerId !== null && winnerPlayerId !== undefined) {
             const winnerIdNum: number = winnerPlayerId!;
             reportMatchResult(matchId, winnerIdNum);
-            
-            // Handle tournament flow after 3 seconds
+
+            // Handle tournament flow after 3 seconds (only winner handles navigation/flow)
             setTimeout(async () => {
-                await handleTournamentMatchEnd(matchId, winnerIdNum, playerRole === winnerSide);
+                await handleTournamentMatchEnd(matchId, winnerIdNum, true);
             }, 3000);
         }
+    } else if (matchId && playerRole !== winnerSide) {
+        // Loser: still run local cleanup and let server-driven flow decide; handleTournamentMatchEnd will be called by winner's navigation
+        setTimeout(() => {
+            cleanup();
+            window.location.hash = `#/tournament`;
+        }, 3000);
     }
 
     endGame();
