@@ -19,7 +19,7 @@ app.get("/ping", async () => {
     return { pong: true };
 });
 
-const PORT = process.env.PORT || 4242;
+const PORT = process.env.PORT || 8081;
 
 app.listen({ port: Number(PORT), host: "0.0.0.0" })
     .then(() => console.log(`Auth-service listening on port: ${PORT}`));

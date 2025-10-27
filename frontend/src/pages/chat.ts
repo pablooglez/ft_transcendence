@@ -44,7 +44,6 @@ const UI_MESSAGES = {
     NO_CONVERSATIONS_FOUND: 'No conversations found. Send a message to start chatting!',
     LOADING_MESSAGES: 'Cargando mensajes...',
     ERROR_LOADING_MESSAGES: 'Error cargando mensajes',
-    NO_MESSAGES: 'No hay mensajes en esta conversación.',
     SEARCHING_USERS: 'Searching users...',
     LOADING_USERS: 'Loading users...',
     NO_USERS_FOUND: 'No users found',
@@ -261,7 +260,6 @@ export function chatHandlers() {
 
     // Check essential elements
     if (!conversationsList || !messagesContainer) {
-        console.error('Essential chat elements not found in DOM');
         return;
     }
 
@@ -277,37 +275,29 @@ export function chatHandlers() {
     // Initialize WebSocket connection
     initializeWebSocket();
 
-    // Handle message form submission
-    messageForm.addEventListener('submit', async (e: Event) => {
+    // Definir el handler fuera para poder eliminarlo antes de añadirlo
+    const handleMessageFormSubmit = async (e: Event) => {
         e.preventDefault();
-        
         if (!activeConversationId) {
             showErrorMessage(UI_MESSAGES.NO_CONVERSATION_SELECTED, messageResult);
             return;
         }
-        
         const messageContentInput = document.getElementById('message-content') as HTMLInputElement;
-        
         if (!messageContentInput) {
             showErrorMessage(UI_MESSAGES.MESSAGE_INPUT_NOT_FOUND, messageResult);
             return;
         }
-
-    const content = sanitizeText(messageContentInput.value.trim());
+        const content = sanitizeText(messageContentInput.value.trim());
         const currentUserId = getCurrentUserId();
         const recipientId = activeConversationId;
-
         if (!content) {
             showErrorMessage(UI_MESSAGES.ENTER_MESSAGE, messageResult);
             return;
         }
-
         try {
             showInfoMessage(UI_MESSAGES.SENDING_MESSAGE, messageResult);
-            
             // Send message via HTTP API (for persistence)
             const httpResult = await sendMessage(recipientId, content);
-            
             // Send message via WebSocket (for real-time delivery)
             const wsMessage: ChatMessage = {
                 type: 'message',
@@ -316,14 +306,11 @@ export function chatHandlers() {
                 content: content,
                 timestamp: new Date().toISOString()
             };
-            
             const wsSent = websocketClient.sendMessage(wsMessage);
-            
             if (wsSent) {
                 if (messageResult) {
                     messageResult.innerHTML = `<span class="success">${UI_MESSAGES.MESSAGE_SENT_SUCCESS}</span>`;
                 }
-                
                 // Add message to UI immediately (sent message)
                 addMessageToUI({
                     ...wsMessage,
@@ -334,27 +321,24 @@ export function chatHandlers() {
                     messageResult.innerHTML = `<span class="success">${UI_MESSAGES.MESSAGE_SENT_HTTP_ONLY}</span>`;
                 }
             }
-            
             if (messageResult) {
                 messageResult.className = 'message-result success';
             }
-            
             // Auto-refresh conversations list after sending message
             loadConversationsDebounced();
-            
             // Clear form
             messageContentInput.value = '';
-            
-            console.log('Message sent:', { http: httpResult, websocket: wsSent });
-            
         } catch (error) {
-            console.error('Error sending message:', error);
             if (messageResult) {
                 messageResult.innerHTML = `<span class="error">❌ Error sending message: ${error}</span>`;
                 messageResult.className = 'message-result error';
             }
         }
-    });
+    };
+
+    // Eliminar el listener previo antes de añadirlo
+    messageForm.removeEventListener('submit', handleMessageFormSubmit);
+    messageForm.addEventListener('submit', handleMessageFormSubmit);
 
     /**
      * Debounced conversation loading to prevent excessive API calls
@@ -399,6 +383,7 @@ export function chatHandlers() {
                     const conversationItem = document.querySelector(`[data-user-id="${conv.otherUserId}"] .conversation-name`);
                     if (conversationItem) {
                         conversationItem.textContent = username;
+                        conversationItem.setAttribute('data-username', username);
                     }
                     
                     // Update avatar with first letter of username
@@ -418,18 +403,23 @@ export function chatHandlers() {
                             item.classList.add('active');
                         }
                         
-                        item.addEventListener('click', async () => {
-                            // Get the real username (in case it's still loading)
-                            const userName = await getUsername(userId);
-                            // Visual highlight of the active conversation
-                            document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
-                            item.classList.add('active');
-                            selectConversation(userId, userName);
+                        item.addEventListener('click', async (e) => {
+                            const target = e.target as HTMLElement;
+                            const username = target.getAttribute('data-username') || await getUsername(userId);
+                            
+                            if (target.classList.contains('conversation-name')) {
+                                // Navigate to profile
+                                window.location.hash = `#/profile?username=${username}`;
+                            } else {
+                                // Select conversation
+                                document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+                                item.classList.add('active');
+                                selectConversation(userId, username);
+                            }
                         });
                     });
                 }, CHAT_CONFIG.USERNAME_LOADING_DELAY);
                 
-                console.log('Conversations loaded:', result);
             } else {
                 conversationsList.innerHTML = `
                     <div class="no-conversations">
@@ -439,7 +429,6 @@ export function chatHandlers() {
             }
             
         } catch (error) {
-            console.error('Error loading conversations:', error);
             conversationsList.innerHTML = `
                 <div class="no-conversations">
                     <p style="color: red;">❌ Error loading conversations: ${error}</p>
@@ -546,9 +535,7 @@ export function chatHandlers() {
             }
             messageResult.className = 'message-result success';
             
-            console.log(`User ${activeConversationId} ${action}ed successfully`);
         } catch (error) {
-            console.error(`Error ${action}ing user:`, error);
             messageResult.innerHTML = `<span class="error">❌ Failed to ${action} user</span>`;
             messageResult.className = 'message-result error';
         }
@@ -565,12 +552,9 @@ export function chatHandlers() {
 
         try {
             const profile = await getUserProfile(activeConversationId);
-            console.log('User profile:', profile);
-            
-            // Show profile modal
-            showProfileModal(profile);
+            // Navigate to profile page with username
+            window.location.hash = `#/profile?username=${profile.username}`;
         } catch (error) {
-            console.error('Error loading profile:', error);
             alert('Failed to load user profile');
         }
     });
@@ -584,12 +568,10 @@ export function chatHandlers() {
         try {
             const userId = getCurrentUserId();
             
-            console.log(`Connecting to WebSocket with userId: ${userId}`);
             await websocketClient.connect(userId);
             
             // Set up message handler for incoming messages
             websocketClient.onMessage((message: ChatMessage) => {
-                console.log('Received WebSocket message:', message);
 
                 if (message.type === 'message') {
                     //  Add all messages to UI (received message)
@@ -603,20 +585,17 @@ export function chatHandlers() {
                     // Track user connection
                     if (message.userId) {
                         connectedUsersSet.add(message.userId);
-                        console.log(`User ${message.userId} connected. Online users:`, Array.from(connectedUsersSet));
                     }
                 } else if (message.type === 'user_disconnected') {
                     // Track user disconnection
                     if (message.userId) {
                         connectedUsersSet.delete(message.userId);
-                        console.log(`User ${message.userId} disconnected. Online users:`, Array.from(connectedUsersSet));
                     }
                 } else if (message.type === 'connected_users_list') {
                     // Inicializa el Set de usuarios conectados con la lista recibida
                     connectedUsersSet.clear();
                     if (Array.isArray(message.data)) {
                         message.data.forEach((userId: number) => connectedUsersSet.add(userId));
-                        console.log('Lista inicial de usuarios online:', Array.from(connectedUsersSet));
                     }
                 }
             });
@@ -625,7 +604,6 @@ export function chatHandlers() {
             updateConnectionStatus(true);
             
         } catch (error) {
-            console.error('Failed to connect to WebSocket:', error);
             updateConnectionStatus(false);
         }
     }
@@ -638,13 +616,10 @@ export function chatHandlers() {
         try {
             if (result && result.room_id) {
                 window.location.hash = `#/pong/remote?room=${result.room_id}`;
-                console.log('Redirected to remote pong room:', result.room_id);
             } else {
                 window.location.hash = '#/game';
-                console.log('Redirected to game selection. Opponent data:', result);
             }
         } catch (error) {
-            console.error('Error handling game redirection:', error);
             // Fallback: show error message
             if (messageResult) {
                 messageResult.innerHTML = '<span class="error">❌ Failed to redirect to game</span>';
@@ -708,12 +683,11 @@ export function chatHandlers() {
         const messagesContainer = document.getElementById('messages-container');
         if (!messagesContainer) return;
         if (messages.length === 0) {
-            messagesContainer.innerHTML = '<div class="no-messages">No hay mensajes en esta conversación.</div>';
+            messagesContainer.innerHTML = '';
             return;
         }
         
         const currentUserId = getCurrentUserId();
-        console.log('🔍 Display Messages - Current User ID:', currentUserId);
         
         messagesContainer.innerHTML = messages.map(msg => {
             // Show sent/received based on current user ID
@@ -853,11 +827,9 @@ export function chatHandlers() {
                 }
             }
         } catch (error) {
-            console.error('Error parsing user from localStorage:', error);
         }
 
         // If no authentication found, redirect to login
-        console.warn('No authentication found, redirecting to login');
         window.location.hash = '#/login';
         return 0; // Return 0 to indicate no user
     }
@@ -881,7 +853,6 @@ export function chatHandlers() {
             usernameCache.set(userId, username);
             return username;
         } catch (error) {
-            console.error(`Failed to get username for user ${userId}:`, error);
             // Fallback to User ID format
             const fallback = `User ${userId}`;
             usernameCache.set(userId, fallback);
@@ -946,7 +917,6 @@ export function chatHandlers() {
                 invitationsSection.style.display = 'none';
             }
         } catch (error) {
-            console.error('Error loading game invitations:', error);
         }
     }
 
@@ -978,7 +948,6 @@ export function chatHandlers() {
     async function handleRejectInvitation(invitationId: number) {
         try {
             await rejectGameInvitation(invitationId);
-            console.log('Invitation rejected');
             
             // Show rejection message
             messageResult.innerHTML = '<span class="success">❌ Invitation rejected</span>';
@@ -992,7 +961,6 @@ export function chatHandlers() {
                 messageResult.innerHTML = '';
             }, 3000);
         } catch (error: any) {
-            console.error('Error rejecting invitation:', error);
             messageResult.innerHTML = `<span class="error">❌ Error rejecting invitation</span>`;
             messageResult.className = 'message-result error';
         }
@@ -1007,7 +975,6 @@ export function chatHandlers() {
         const victories = document.getElementById('profile-victories');
         
         if (!modal || !username || !userId || !avatar || !victories) {
-            console.error('Profile modal elements not found');
             return;
         }
 
@@ -1084,13 +1051,7 @@ export function chatHandlers() {
                     localStorage.setItem('pendingRemoteRoomId', result.roomId);
                     // Automatically redirect to the remote room
                     window.location.hash = `#/pong/remote?room=${result.roomId}`;
-                } else {
-                    if (messageResult) {
-                        messageResult.innerHTML = '<span class="success">🎮 Game invitation sent! (No roomId)"</span>';
-                        messageResult.className = 'message-result success';
-                    }
                 }
-                console.log('Game invitation sent:', result);
             } catch (error) {
                 const errMsg = (error instanceof Error) ? error.message : String(error);
                 if (messageResult) {
@@ -1124,7 +1085,6 @@ export function chatHandlers() {
             try {
                 users = await searchUsersByUsername(query);
             } catch (error) {
-                console.warn('Search API not available, filtering from known users:', error);
                 // Fallback: filter from available users
                 const allUsers = await getAvailableUsers();
                 users = allUsers.filter((user: any) => 
@@ -1166,7 +1126,6 @@ export function chatHandlers() {
                 userSearchResults.innerHTML = '<div class="no-results">No users found</div>';
             }
         } catch (error) {
-            console.error('Error searching users:', error);
             userSearchResults.innerHTML = '<div class="error">Error searching users</div>';
         }
     }
@@ -1219,7 +1178,6 @@ export function chatHandlers() {
                 userSearchResults.innerHTML = '<div class="no-results">No users found</div>';
             }
         } catch (error) {
-            console.error('Error loading users:', error);
             userSearchResults.innerHTML = '<div class="error">Error loading users</div>';
         }
     }
@@ -1286,7 +1244,6 @@ export function chatHandlers() {
             
             return [];
         } catch (error) {
-            console.error('Error getting available users:', error);
             // Return empty array instead of hardcoded fallback users
             return [];
         }

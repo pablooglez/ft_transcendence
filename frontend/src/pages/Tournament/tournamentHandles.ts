@@ -1,4 +1,4 @@
-import { getAccessToken } from "../../state/authState";
+import { getAccessToken, isLoggedIn } from "../../state/authState";
 import { localTournamentPongPage, playTournamentMatch } from "./localTournament";
 import { createRemoteTournament, getRemoteTournaments, loadTournamentPlayers, openTournamentLobby, startPolling, stopPolling, showTournamentMatchesLobbyForPlayers, startFastPolling } from "./remoteTournament";
 import { getTournamentLobbyHTML, getTournamentListHtml, getTournamentRemoteModeHtml, getTournamentAliasEightHtml, getTournamentCanvasFourHtml, getTournamentAliasFourHtml, getTournamentPlayersHtml } from "./tournamentTemplate";
@@ -390,6 +390,10 @@ export async function tournamentHandlers() {
     })
 
     onlineButton?.addEventListener("click", () => {
+        if (!isLoggedIn()) {
+            window.location.hash = "#/login";
+            return ;
+        }
         setTournamentContent(getTournamentRemoteModeHtml());
         isOnline = 1;
         tournamentHandlers();

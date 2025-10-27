@@ -10,6 +10,9 @@ import { handleTwoFA } from "./pages/Login/twofa";
 import { handleOAuthErrors, userLoggedIn } from "./pages/Login/loginHandlers";
 import { fetchCurrentUser } from "./pages/Login/loginService";
 import { tournamentHandlers } from "./pages/Tournament/tournamentHandles";
+import { aboutHandlers } from "./pages/About/about";
+import { forgotPassHandle } from "./pages/Login/forgotPass";
+
 export async function render() {
 
     await refreshAccessToken();
@@ -17,7 +20,14 @@ export async function render() {
     const accessToken = getAccessToken();
     if (accessToken) {
         const user = await fetchCurrentUser(accessToken);
-        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user", JSON.stringify(user.user));
+        
+        // Update profile link to current user's profile
+        // Maybe to use something later for direct game invitations
+        const profileLink = document.querySelector('a[href="#/profile"]') as HTMLAnchorElement;
+        if (profileLink && user.user.username) {
+            profileLink.href = `#/profile?username=${user.user.username}`;
+        }
     }
     userLoggedIn();
 
@@ -35,11 +45,6 @@ export async function render() {
         home.innerHTML = homeText();
         const header = document.getElementById("header")!;
         header.className = "header-home";
-    }
-
-    if (location.hash === "#/register")
-    {
-        autoRegisterUser("t", "t", "t@gmail.com"); // auto register for testing purposes
     }
     if (location.hash === "#/login")
         {
@@ -67,6 +72,12 @@ export async function render() {
     }
     if (location.hash === "#/tournament") {
         tournamentHandlers();
+    }
+    if (location.hash === "#/about") {
+        aboutHandlers();
+    }
+    if (location.hash === "#/forgot-pass") {
+        forgotPassHandle();
     }
     if (location.hash === "" || location.hash === "#/" || location.hash === "#/home") {
         import("./pages/home").then(mod => mod.handleStars());
