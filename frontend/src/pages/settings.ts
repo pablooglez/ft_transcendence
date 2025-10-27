@@ -16,7 +16,11 @@ export function Settings() {
   return `
       <div class="settings-actions">
         <form id="settings-form">
-          <p id="avatar"></p>
+          <div class="avatar-section">
+            <p id="avatar"></p>
+            <input type="file" id="newAvatar" />
+            <button type="button" id="changeAvatarBTN">Change Avatar</button>
+          </div>
           <div class="username-change">
             <p id="username"></p>
             <input type="text" id="newUsername" value="Enter a new Username" />
@@ -27,7 +31,6 @@ export function Settings() {
             <input type="text" id="newEmail" value="Enter a new Email" />
             <button type="button" id="changeEmailBTN">Change Email</button>
           </div>
-          <pre id="AllUsers"></pre>
         </form>
       </div>
   `;
@@ -41,7 +44,8 @@ export function settingsHandlers(accessToken: string) {
   const changeUsernameBtn = document.querySelector<HTMLButtonElement>("#changeUsernameBTN")!;
   const newEmail = document.querySelector<HTMLInputElement>("#newEmail")!;
   const changeEmailBtn = document.querySelector<HTMLButtonElement>("#changeEmailBTN")!;
-  const allUsersField = document.querySelector<HTMLPreElement>("#AllUsers")!;
+  const avatarInput = document.querySelector<HTMLInputElement>("#newAvatar")!;
+  const changeAvatarBtn = document.querySelector<HTMLButtonElement>("#changeAvatarBTN")!;
 
   // Traer datos del usuario
   async function fetchUserData() {
@@ -63,7 +67,6 @@ export function settingsHandlers(accessToken: string) {
             "x-user-id": data.user.id.toString(),
           },
         });
-        console.log("Avatar fetched:", avatarIMG);
         avatarField.innerHTML = `<img src="${URL.createObjectURL(await avatarIMG.blob())}" alt="User Avatar" width="100" height="100"/>`;
       } else {
         console.error("Error fetching user data:", data);
@@ -75,37 +78,6 @@ export function settingsHandlers(accessToken: string) {
 
   fetchUserData();
 
-  // -> TEMPORALMENTE <-
-
-  // Función para obtener todos los usuarios
-  async function fetchAllUsers() {
-    try {
-      const res = await fetch("http://localhost:8080/users/getAllUsers", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        // Formatear la lista de usuarios como "ID - Username"
-        const usersList = data.users.map((user: any) => `${user.id} - ${user.username}`).join('\n');
-        allUsersField.textContent = usersList;
-      } else {
-        console.error("Error fetching all users:", data);
-        allUsersField.textContent = "Error loading users";
-      }
-    } catch (err) {
-      console.error("⚠️ Failed to reach server", err);
-      allUsersField.textContent = "Failed to load users";
-    }
-  }
-
-  fetchAllUsers();
-
-  // -> FINAL TEMPORALMENTE <-
-
-  // Listener para cambiar username
   changeUsernameBtn.addEventListener("click", async (e) => {
     e.preventDefault();
     const currentUsername = usernameField.textContent?.replace("Username: ", "");
@@ -138,7 +110,6 @@ export function settingsHandlers(accessToken: string) {
     }
   });
 
-  // Listener para cambiar email
   changeEmailBtn.addEventListener("click", async (e) => {
     e.preventDefault();
     const currentEmail = emailField.textContent?.replace("Email: ", "");
@@ -167,5 +138,46 @@ export function settingsHandlers(accessToken: string) {
       console.error("⚠️ Failed to reach server", err);
     }
   });
+
+  changeAvatarBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const file = avatarInput.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only PNG, JPEG and JPG files are allowed');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await fetch("http://localhost:8080/users/changeAvatar", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        console.log("Avatar changed successfully");
+        location.reload();
+      } else {
+        console.error("Error changing avatar:", data.error);
+      }
+    } 
+    catch (err) {
+      console.error("⚠️ Failed to reach server", err);
+    }
+  });
 }
+
+
 

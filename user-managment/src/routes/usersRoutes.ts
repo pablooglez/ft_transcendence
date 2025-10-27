@@ -1,11 +1,26 @@
-import { FastifyInstance } from "fastify";
-import { registerController , register42Controller , usernameChanger , emailChanger , userGetterByEmail,
-    getCurrentUserController, userGetterByUsername, userGetterById, avatarGetterController, passwordControl } from "../controllers/usersController";
-import { getResultsController, addVictoryController, addDefeatController } from "../controllers/matchResultController";
-import { registerController , register42Controller , usernameChanger , emailChanger , userGetterByEmail,
-    getCurrentUserController, userGetterByUsername, userGetterById, avatarGetterController, passwordControl } from "../controllers/usersController";
-import { getResultsController, addVictoryController, addDefeatController } from "../controllers/matchResultController";
-import { getAllUsersController } from "../controllers/friendsController";
+import {
+  registerController,
+  register42Controller,
+  usernameChanger,
+  emailChanger,
+  userGetterByEmail,
+  getCurrentUserController,
+  userGetterByUsername,
+  userGetterById,
+  avatarGetterController,
+  avatarChanger,
+  passwordControl,
+} from "../controllers/usersController";
+
+import {
+  getResultsController,
+  addVictoryController,
+  addDefeatController,
+} from "../controllers/matchResultController";
+
+import { 
+    getAllUsersController 
+} from "../controllers/friendsController";
 
 export default async (fastify: FastifyInstance) => {
     fastify.post("/register", registerController);
@@ -19,6 +34,7 @@ export default async (fastify: FastifyInstance) => {
     fastify.post("/getUserById", userGetterById);
     fastify.post("/getUserByEmail", userGetterByEmail);
     fastify.get("/getAvatar", avatarGetterController);
+    fastify.post("/changeAvatar", avatarChanger);
     fastify.get("/getResults", getResultsController);
     fastify.post("/addVictory", addVictoryController);
     fastify.post("/addDefeat", addDefeatController);

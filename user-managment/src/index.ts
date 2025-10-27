@@ -1,8 +1,11 @@
 import Fastify from "fastify";
+import multipart from "@fastify/multipart";
 
 import usersRoutes from "./routes/usersRoutes";
 
 const app = Fastify({ logger: true });
+
+app.register(multipart);
 
 app.register(usersRoutes);
 

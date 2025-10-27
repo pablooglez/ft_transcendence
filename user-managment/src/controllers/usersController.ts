@@ -1,7 +1,17 @@
 import bcrypt from "bcrypt";
 import { FastifyReply, FastifyRequest } from "fastify";
-import { registerUser, register42User, changeUsername , changeEmail , getUserByUsername, getUserById, getUserByEmail, 
-	getUserAvatar } from "../services/usersService";
+import { 
+	registerUser, 
+	register42User, 
+	changeUsername, 
+	changeEmail, 
+	getUserByUsername, 
+	getUserById, 
+	getUserByEmail, 
+	getUserAvatar,
+	avatarUploader,
+	avatarDeleter
+} from "../services/usersService";
 
 export async function registerController(req: FastifyRequest, reply: FastifyReply) {
 	const { email, username, password } = req.body as { email: string; username: string; password: string };
@@ -153,6 +163,35 @@ export async function avatarGetterController(req: FastifyRequest, reply: Fastify
 	}
 }
 
+export async function avatarChanger(req: FastifyRequest, reply: FastifyReply) {
+	const userId = req.headers["x-user-id"];
+	const data = await req.file();
+
+	if (!data) {
+		return reply.code(400).send({ error: "No file uploaded" });
+	}
+	try {
+		console.log("File info:", {
+			mimetype: data.mimetype,
+			filename: data.filename,
+			encoding: data.encoding,
+			fieldname: data.fieldname
+		});
+		console.log("Completed Controller 1");
+		const avatar = await getUserAvatar(userId);
+		console.log("Completed Controller 2");
+		if (avatar) {
+			await avatarDeleter(userId);
+		}
+		console.log("Completed Controller 3");
+		await avatarUploader(userId, data);
+		return reply.send({ message: "Avatar changed successfully" });
+	} catch (err: any) {
+		console.error("Error occurred during avatar change:", err);
+		return reply.code(400).send({ error: err.message });
+	}
+}
+
 export async function passwordControl(req: FastifyRequest, reply: FastifyReply) {
 	const { username, password } = req.body as { username: string; password: string };
 
@@ -167,7 +206,6 @@ export async function passwordControl(req: FastifyRequest, reply: FastifyReply) 
 	} catch (err: any) {
 		return reply.code(400).send({ error: err.message });
 	}
-	//delete this line
 }
 
 export async function getCurrentUserController(req: FastifyRequest, reply: FastifyReply) {
