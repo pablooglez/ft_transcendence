@@ -4,22 +4,23 @@ export function ErrorPage(): string {
         .error-page {
             min-height: 70vh;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             justify-content: center;
             background: none;
             font-family: 'DM Sans', Arial, sans-serif;
+            gap: 48px;
         }
         .error-img {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 24px;
-            border-radius: 50%;
-            background: #BABBD6;
+            width: 520px;
+            height: 520px;
+            margin-bottom: 40px;
+            border-radius: 16px;
+            background: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 24px rgba(255,68,68,0.12);    
+            box-shadow: none;
             font-size: 64px;
             animation: shake 0.7s;
         }
@@ -63,10 +64,15 @@ export function ErrorPage(): string {
         }
         </style>
         <div class="error-page">
-            <div class="error-img">😵‍💫</div>
-            <div class="error-title">Oops! Something went wrong</div>
-            <div class="error-desc">Please try again or contact support.<br>We're working to fix it.</div>
-            <a href="#/" class="error-home-btn">Go to Home</a>
+            <div class="error-content" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:320px;">
+                <div style="font-size:5rem;font-weight:900;color:#c80000;line-height:1;margin-bottom:10px;text-shadow:0 4px 24px rgba(200,0,0,0.18);">404</div>
+                <div class="error-title">Page not found.</div>
+                <div class="error-desc">Our experts are working on it.</div>
+                <a href="#/" class="error-home-btn">Go to Home</a>
+            </div>
+            <div class="error-img">
+                <img src="public/error_page_image.jpg" alt="Error" style="width:88%;height:88%;border-radius:12px;object-fit:cover;" />
+            </div>
         </div>
     `;
 }
