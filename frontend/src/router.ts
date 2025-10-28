@@ -78,7 +78,8 @@ export function router(route: string): string {
         case "#/tournament":
             return Tournament();
         case "#/":
-        default:
             return Home();
+        default:
+            return ErrorPage();
     }
 }
