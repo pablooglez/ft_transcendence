@@ -1,34 +1,5 @@
 export function TermsPage(): string {
     return `
-        <style>
-        .terms-page {
-            min-height: 70vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            background: #fff;
-            font-family: 'DM Sans', Arial, sans-serif;
-            padding: 48px 24px;
-        }
-        .terms-title {
-            color: #222;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 24px;
-            text-align: center;
-        }
-        .terms-content {
-            color: #333;
-            font-size: 1.1rem;
-            max-width: 800px;
-            line-height: 1.7;
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 32px;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-        }
-        </style>
         <div class="terms-page">
             <div class="terms-title">Terms and Conditions</div>
             <div class="terms-content">
