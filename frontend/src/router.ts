@@ -32,6 +32,11 @@ export function router(route: string): string {
                 return Profile();
             }
             return Login();
+		case "#/profile/":
+        case route.match(/^#\/profile\/.+/)?.input || "":
+            setTimeout(profileHandlers, 0);
+            return Profile();
+
         case "#/about":
             return About();
         case "#/login":
