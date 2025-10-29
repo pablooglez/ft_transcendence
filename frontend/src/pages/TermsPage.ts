@@ -2,18 +2,19 @@ export function TermsPage(): string {
     return `
         <div class="terms-page">
             <div class="terms-title">Terms and Conditions</div>
-            <div class="terms-content">
-                <p><strong>Welcome to Ft_transcendence!</strong></p>
-                <p>By accessing or using our website, you agree to be bound by these terms and conditions. Please read them carefully.</p>
-                <ol>
-                    <li><strong>Acceptance of Terms:</strong> Your use of the site constitutes your agreement to these terms.</li>
-                    <li><strong>Modification:</strong> We reserve the right to modify these terms at any time. Changes will be posted on this page.</li>
-                    <li><strong>Use of Content:</strong> All content is for personal, non-commercial use unless otherwise stated.</li>
-                    <li><strong>Privacy:</strong> Your privacy is important to us. Please review our Privacy Policy for details.</li>
-                    <li><strong>Limitation of Liability:</strong> We are not liable for any damages resulting from the use of our site.</li>
-                    <li><strong>Contact:</strong> For questions, contact support@fttranscendence.com.</li>
-                </ol>
-                <p>By continuing to use our site, you acknowledge and accept these terms.</p>
+            <div class="modules-container" style="justify-content:center;">
+                <div class="module-card" style="max-width:900px; width:90vw;">
+                    <div class="terms-content" style="background:transparent; box-shadow:none; padding:0; margin-bottom:0;">
+                        <p><strong>Welcome to Ft_transcendence!</strong></p>
+                        <ol>
+                            <li><strong>Academic use:</strong> This website is for educational and demonstrative purposes only.</li>
+                            <li><strong>Privacy:</strong> No personal data is collected for commercial purposes.</li>
+                            <li><strong>Responsibility:</strong> The authors are not responsible for errors or misuse.</li>
+                            <li><strong>Good Practice:</strong> Users should follow general good practices and responsible behavior when using this platform.</li>
+                        </ol>
+                        <p>Using this website implies acceptance of these terms.</p>
+                    </div>
+                </div>
             </div>
         </div>
     `;
