@@ -1,4 +1,4 @@
-export function Home(): string {
++export function Home(): string {
   return `
     <div class="home-page">
     <h1 class="home-page-title">After more than 20 projects...</h1>
