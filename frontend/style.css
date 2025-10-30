@@ -2306,13 +2306,170 @@ header {
 /*              Settings             */
 /* ********************************* */
 
-.settings-actions {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1rem;
+  font-family: Arial, Helvetica, sans-serif;
+  color: white;
+}
+
+/* === Card Wrapper === */
+.settings-card {
+  width: 480px;
+  background: #1a1b3a;
+  border: 1px solid #282a58;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(66, 243, 250, 0.08);
+  overflow: hidden;
+}
+
+/* === Navigation Tabs === */
+.settings-nav {
+  display: table;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-nav-item {
+  display: table-cell;
+  text-align: center;
+}
+
+.settings-nav-link {
+  appearance: none;
+  border: none;
+  background: #181741;
+  color: #e0e0e0;
+  text-decoration: none;
+  cursor: pointer;
+  width: 100%;
+  display: block;
+  padding: 12px 0;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.settings-nav-link:hover {
+  color: #42f3fa;
+  background: #1e1e4f;
+}
+
+.settings-nav-link.active {
+  background: #42f3fa;
+  color: #181741;
+  font-weight: 600;
+  box-shadow: inset 0 0 10px #42f3fa;
+}
+
+.btr {
+  border-top-right-radius: 8px;
+}
+
+.btl {
+  border-top-left-radius: 8px;
+}
+
+/* === Panels === */
+.settings-tab-content {
+  display: flex;
+  padding: 1.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.settings-tab-panel {
+  display: none;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.settings-tab-panel.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === Form Styles === */
+.settings-form-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #141536;
+  border-radius: 6px;
+  border: 1px solid #252552;
+  transition: border-color 0.2s ease;
+}
+
+.settings-form-section:hover {
+  border-color: #42f3fa;
+}
+
+.settings-form-section label,
+.settings-form-section p {
+  color: #42f3fa;
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+}
+
+.settings-form-section input {
+  width: 95%;
+  background: #0e0f2b;
+  color: #fff;
+  border: 1px solid #2b2b5e;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, color 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.settings-form-section input:focus {
+  outline: none;
+  border-color: #42f3fa;
+  color: #42f3fa;
+}
+
+.settings-form-section button {
+  margin-top: 0.8rem;
+  background: #181741;
+  border: 1px solid #2b2b5e;
+  color: #e0e0e0;
+  border-radius: 4px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-form-section button:hover {
+  color: #42f3fa;
+  border-color: #42f3fa;
+  background: #1e1e4f;
+}
+
+/* === Two-Factor Section === */
+#twofa-section {
+  background: #141536;
+  border: 1px solid #252552;
+  border-radius: 6px;
+  padding: 1.25rem;
+  transition: border-color 0.2s ease;
+}
+
+#twofa-section:hover {
+  border-color: #42f3fa;
 }
 
 
