@@ -32,10 +32,7 @@ export function router(route: string): string {
             }
             return Login();
         case "#/login/2fa":
-            if (isLoggedIn()) {
-                return TwoFALogin();
-            }
-            return Login();
+            return TwoFALogin();
         case "#/forgot-pass":
             return forgotPass();
             case "#/status":
