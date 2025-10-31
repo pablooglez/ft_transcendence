@@ -496,7 +496,7 @@ export function getAboutUsHTML() {
                     <ul class="social">
                         <li><a href="https://github.com/SalvadorChamizo" class="fa-brands fa-github"
                                 aria-hidden="true" target="_blank" rel="noopener noreferrer"></a></li>
-                        <li><a href="www.linkedin.com/in/salvadorchamizo" class="fa-brands fa-linkedin"
+                        <li><a href="https://www.linkedin.com/in/salvadorchamizo/" class="fa-brands fa-linkedin"
                                 aria-hidden="true" target="_blank" rel="noopener noreferrer"></a></li>
                     </ul>
                     </div>
