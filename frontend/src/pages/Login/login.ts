@@ -3,6 +3,8 @@ import { getLoginHtml, TwoFAFormHtml } from "./loginTemplate"
 import { setupLoginHandlers } from "./loginHandlers";
 import { getElement, hideElement } from "./loginDOM"
 
+const apiHost = `${window.location.hostname}`;
+
 export function Login(): string {
   return getLoginHtml();
 }
@@ -84,7 +86,7 @@ export function loginHandlers(): void {
     enableBtn.onclick = async () => {
       try {
         const token = getAccessToken();
-        const res = await fetch("http://localhost:8080/auth/enable-2fa", {
+        const res = await fetch(`http://${apiHost}:8080/auth/enable-2fa`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -112,7 +114,7 @@ export function loginHandlers(): void {
           showQRBtn.onclick = async () => {
            try {
              const token = getAccessToken();
-             const res = await fetch("http://localhost:8080/auth/generate-qr", {
+             const res = await fetch(`http://${apiHost}:8080/auth/generate-qr`, {
                method: "POST",
                headers: {
                  "Content-Type": "application/json",
@@ -145,7 +147,7 @@ export function loginHandlers(): void {
       const code = (document.querySelector<HTMLInputElement>("#verify-2fa-code")!).value;
 
       try {
-        const res = await fetch("http://localhost:8080/auth/verify-2fa", {
+        const res = await fetch(`http://${apiHost}:8080/auth/verify-2fa`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId, code }),
