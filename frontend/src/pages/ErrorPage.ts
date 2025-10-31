@@ -4,7 +4,7 @@ export function ErrorPage(): string {
             <div class="error-content">
                 <div class="error-404">404</div>
                 <div class="error-title">Page not found.</div>
-                <div class="error-desc">Our experts are working on it.</div>
+                <div class="error-desc">But don't worry, our experts are working on it.</div>
                 <a href="#/" class="error-home-btn">Go to Home</a>
             </div>
             <div class="error-img">
