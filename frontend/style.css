@@ -1395,6 +1395,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   color: #42F3FA;
   font-size: 20px;
   margin-right: 12px;
@@ -1450,6 +1451,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   color: #42F3FA;
   font-size: 18px;
   margin-right: 12px;
@@ -1628,6 +1630,7 @@ header {
   color: white;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   box-shadow: 0 0 20px rgba(66, 243, 250, 0.6);
+  overflow: hidden;
 }
 
 .profile-username {
@@ -2130,6 +2133,7 @@ header {
   font-weight: bold;
   margin-right: 12px;
   position: relative;
+  overflow: hidden;
 }
 
 .user-status {
