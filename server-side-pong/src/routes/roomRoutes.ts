@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { createRoom } from "../services/roomService";
-import { getRoom, getAllRooms, saveRoom } from "../db/roomRepository";
+import { getRoom, getAllRooms, saveRoom, saveMatch, getMatchesByPlayer } from "../db/roomRepository";
 import { scheduleAutoDeleteIfEmpty } from "../services/publicRoomtimers";
 
 export async function roomRoutes(fastify: FastifyInstance) {
@@ -65,5 +65,34 @@ export async function roomRoutes(fastify: FastifyInstance) {
     const room = getRoom(id);
     if (!room) return reply.code(404).send({ error: "Room not found" });
     reply.send(room);
+  });
+
+  // Endpoint to register a finished match
+  fastify.post('/matches', async (request: any, reply: any) => {
+    const body = request.body as any;
+    // expected body: { id?, roomId?, players: string[], winner?: string|null, score: { left:number, right:number }, endedAt?: number }
+    if (!body || !Array.isArray(body.players) || typeof body.score === 'undefined') {
+      return reply.code(400).send({ error: 'Invalid body' });
+    }
+    try {
+      const matchId = saveMatch({ id: body.id, roomId: body.roomId, players: body.players, winner: body.winner ?? null, score: body.score, endedAt: body.endedAt });
+      return reply.send({ matchId });
+    } catch (err) {
+      request.log.error('Failed saving match', err);
+      return reply.code(500).send({ error: 'Failed to save match' });
+    }
+  });
+
+  // Get matches for a player by player id
+  fastify.get('/matches/player/:playerId', async (request: any, reply: any) => {
+    const { playerId } = request.params as { playerId: string };
+    if (!playerId) return reply.code(400).send({ error: 'playerId required' });
+    try {
+      const matches = getMatchesByPlayer(playerId);
+      return reply.send(matches);
+    } catch (err) {
+      request.log.error('Failed fetching matches for player', playerId, err);
+      return reply.code(500).send({ error: 'Failed fetching matches' });
+    }
   });
 }

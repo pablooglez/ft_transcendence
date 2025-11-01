@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS room_players (
   PRIMARY KEY (room_id, player_id),
   FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS matches (
+  id TEXT PRIMARY KEY,
+  room_id TEXT,
+  players TEXT NOT NULL,
+  winner TEXT,
+  score TEXT NOT NULL,
+  ended_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
+);
 `);
 
 // Migration: ensure 'public' column exists (safe to run multiple times)
@@ -52,6 +62,29 @@ export function saveRoom(roomId: string, state: any, players: string[], isPublic
   for (const playerId of players) {
     insertPlayer.run(roomId, playerId);
   }
+}
+
+export function saveMatch(match: { id?: string; roomId?: string | null; players: string[]; winner?: string | null; score: any; endedAt?: number }): string {
+  const id = match.id || `match_${Math.random().toString(36).substring(2, 10)}`;
+  const stmt = db.prepare('INSERT OR REPLACE INTO matches (id, room_id, players, winner, score, ended_at) VALUES (?, ?, ?, ?, ?, ?)');
+  const endedAt = match.endedAt ? new Date(match.endedAt).toISOString() : new Date().toISOString();
+  stmt.run(id, match.roomId || null, JSON.stringify(match.players), match.winner || null, JSON.stringify(match.score), endedAt);
+  return id;
+}
+
+export function getMatchesByPlayer(playerId: string) {
+  // players stored as JSON array; use a LIKE query to match the serialized player id
+  const pattern = `%"${playerId}"%`;
+  const stmt = db.prepare('SELECT id, room_id, players, winner, score, ended_at FROM matches WHERE players LIKE ? ORDER BY ended_at DESC');
+  const rows = stmt.all(pattern);
+  return rows.map((r: any) => ({
+    id: r.id,
+    roomId: r.room_id,
+    players: JSON.parse(r.players),
+    winner: r.winner,
+    score: JSON.parse(r.score),
+    endedAt: r.ended_at,
+  }));
 }
 
 export function getRoom(roomId: string): { id: string, state: any, players: string[] } | null {
