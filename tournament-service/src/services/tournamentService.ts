@@ -229,6 +229,8 @@ export async function joinTournament(tournamentId: number, userId: number | null
     tournament_id: tournamentId,
   });
 
+  TournamentRepository.updateCurrentTournamentPlayers(tournamentId, playerCount);
+
   return TournamentRepository.getById(tournamentId);
 }
 
