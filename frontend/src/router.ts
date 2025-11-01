@@ -14,6 +14,7 @@ import { Profile, profileHandlers } from "./pages/profile";
 import { Tournament } from "./pages/Tournament/tournament";
 import { isLoggedIn } from "./state/authState";
 import { forgotPass } from "./pages/Login/forgotPass";
+import { privateRemotePongPage, privateRemotePongHandlers } from "./pages/privateRemotePong";
 
 export function router(route: string): string {
     // for the roomid to be visible
@@ -21,6 +22,11 @@ export function router(route: string): string {
         setTimeout(remotePongHandlers, 0);
         return remotePongPage();
     }
+    if (route.startsWith("#/private-remote-pong")) {
+        setTimeout(privateRemotePongHandlers, 0);
+        return privateRemotePongPage();
+    }
+
     if (route.startsWith("#/remote-tournament-pong")) {
         setTimeout(remoteTournamentPongHandlers, 0);
         return remoteTournamentPongPage();
