@@ -128,5 +128,7 @@ export function getChatHtml(): string {
                 </div>
             </div>
         </div>
+        <div id="notifications">
+        </div>
     `;
 }

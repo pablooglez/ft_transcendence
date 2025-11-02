@@ -8,8 +8,11 @@ import { getActiveConversationId } from "./chatState";
 import { blockHandler } from "./chatBlockUsers";
 import { sendGameInvitation } from "../../services/api";
 import { openNewChatModal, closeProfileModal } from "./chatModal";
+import { getAccessToken } from "../../state/authState";
 
-export function chatHandlers() {
+const apiHost = window.location.hostname;
+
+export async function chatHandlers() {
     // Get essential DOM elements with proper error handling
     const messageForm = document.getElementById('message-form') as HTMLFormElement;
     const messageResult = document.getElementById('message-result') as HTMLDivElement;
@@ -48,6 +51,31 @@ export function chatHandlers() {
     const userSearchInput = document.getElementById('user-search') as HTMLInputElement;
     const userSearchResults = document.getElementById('user-search-results') as HTMLDivElement;
 
+    const notifications = document.getElementById("notifications");
+
+    if (notifications) {
+        const token = getAccessToken();
+        try {
+            const res = await fetch(`http://${apiHost}:8080/conversations/notifications`, {
+                method: "GET",
+                headers: {  
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!res.ok) {
+                console.error('Failed to fetch notifications:', res.status, res.statusText);
+                notifications.innerHTML = '';
+            } else {
+                const data = await res.json();
+                notifications.innerHTML = data.notifications ?? '';
+            }
+        } catch (err) {
+            console.error('Error fetching notifications:', err);
+            notifications.innerHTML = '';
+        }
+    }
     // Add event listener for sidebar new chat button
     if (sidebarNewChatBtn) {
         sidebarNewChatBtn.addEventListener('click', openNewChatModal);
