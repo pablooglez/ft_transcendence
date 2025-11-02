@@ -57,7 +57,7 @@ export async function register42Controller(req: FastifyRequest, reply: FastifyRe
 }
 
 export async function loginTimeRegister(req: FastifyRequest, reply: FastifyReply){
-	const userId = req.headers["x-user-id"];
+	const { userId } = req.body as { userId: number };
 
 	try {
 		registerTime(userId);
