@@ -103,6 +103,10 @@ function cleanup() {
     isRoomCreator = false;
     gameInitialized = false;
     try { document.getElementById("scoreboard")?.classList.add("hidden"); } catch (e) {}
+    // Ensure powerup disabled when cleaning up private remote room
+    try {
+        if (roomId) postApi(`/game/${roomId}/powerup?enabled=false`).catch(() => {});
+    } catch (e) { /* ignore */ }
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
@@ -207,9 +211,15 @@ function startGame(roomIdToJoin: string) {
         if (!gameInitialized) {
             gameInitialized = true;
             postApi(`/game/${data.roomId}/init`).then(async () => {
-                if (isRoomCreator) {
-                    try { await postApi(`/game/${data.roomId}/resume`); } catch (e) { /* ignore */ }
-                }
+                    if (isRoomCreator) {
+                        try {
+                            // Enable powerup for this private remote room
+                            await postApi(`/game/${data.roomId}/powerup?enabled=true`);
+                        } catch (e) {
+                            console.warn('[PrivateRemotePong] Failed to enable powerup for room', data.roomId, e);
+                        }
+                        try { await postApi(`/game/${data.roomId}/resume`); } catch (e) { /* ignore */ }
+                    }
             });
             isGameRunning = false;
         } else {
