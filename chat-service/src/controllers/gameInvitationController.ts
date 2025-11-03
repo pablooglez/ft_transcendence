@@ -10,15 +10,10 @@ export async function sendGameInvitationController(req: FastifyRequest, reply: F
 
     try {
         const userId = extractUserId(req.headers);
-        // Extraer JWT del header Authorization
-        const authHeader = req.headers['authorization'];
-        const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
-        const result = await gameInvitationService.sendGameInvitation(userId, toUserId, gameType, token);
+
+        const result = await gameInvitationService.sendGameInvitation(userId, toUserId, gameType);
         return reply.send(result);
     } catch (err: any) {
-        if (err.message === 'User not authenticated') {
-            return reply.code(401).send({ error: 'Unauthorized' });
-        }
         return reply.code(400).send({ error: err.message });
     }
 }
@@ -30,10 +25,7 @@ export async function getPendingInvitationsController(req: FastifyRequest, reply
         const invitations = gameInvitationService.getPendingInvitations(userId);
         return reply.send({ invitations });
     } catch (err: any) {
-        if (err.message === 'User not authenticated') {
-            return reply.code(401).send({ error: 'Unauthorized' });
-        }
-        return reply.code(500).send({ error: err.message });
+        return reply.code(400).send({ error: err.message });
     }
 }
 
@@ -44,10 +36,7 @@ export async function getSentInvitationsController(req: FastifyRequest, reply: F
         const invitations = gameInvitationService.getSentInvitations(userId);
         return reply.send({ invitations });
     } catch (err: any) {
-        if (err.message === 'User not authenticated') {
-            return reply.code(401).send({ error: 'Unauthorized' });
-        }
-        return reply.code(500).send({ error: err.message });
+        return reply.code(400).send({ error: err.message });
     }
 }
 
@@ -56,15 +45,10 @@ export async function acceptGameInvitationController(req: FastifyRequest, reply:
 
     try {
         const userId = extractUserId(req.headers);
-        // Extraer JWT del header Authorization
-        const authHeader = req.headers['authorization'];
-        const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
-        const result = await gameInvitationService.acceptGameInvitation(parseInt(id), userId, token);
+
+        const result = await gameInvitationService.acceptGameInvitation(parseInt(id), userId);
         return reply.send(result);
     } catch (err: any) {
-        if (err.message === 'User not authenticated') {
-            return reply.code(401).send({ error: 'Unauthorized' });
-        }
         return reply.code(400).send({ error: err.message });
     }
 }
@@ -78,9 +62,6 @@ export async function rejectGameInvitationController(req: FastifyRequest, reply:
         const result = await gameInvitationService.rejectGameInvitation(parseInt(id), userId);
         return reply.send(result);
     } catch (err: any) {
-        if (err.message === 'User not authenticated') {
-            return reply.code(401).send({ error: 'Unauthorized' });
-        }
         return reply.code(400).send({ error: err.message });
     }
 }
