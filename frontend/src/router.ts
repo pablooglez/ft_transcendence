@@ -21,6 +21,7 @@ import { forgotPass } from "./pages/Login/forgotPass";
 import { ErrorPage } from "./pages/ErrorPage";
 import { TermsPage } from "./pages/TermsPage";
 import { privateRemotePongPage, privateRemotePongHandlers } from "./pages/privateRemotePong";
+import { setupSidebarTabs } from "./pages/Chat/chatNotifications";
 
 export function router(route: string): string {
     // for the roomid to be visible
@@ -48,7 +49,20 @@ export function router(route: string): string {
         case "#/error":
             return ErrorPage();
         case "#/terms":
-            return TermsPage();        case "#/about":
+            return TermsPage();
+        case "#/profile":
+            if (isLoggedIn()) {
+                setTimeout(profileHandlers, 0);
+                return Profile();
+            }
+            return Login();
+        case route.match(/^#\/profile\/.+/)?.input:
+            if (isLoggedIn()) {
+                setTimeout(profileHandlers, 0);
+                return Profile();
+            }
+            return Login();
+        case "#/about":
             return About();
         case "#/login":
             if (isLoggedIn()) {
@@ -69,6 +83,7 @@ export function router(route: string): string {
             case "#/chat":
                 if (isLoggedIn()) {
                     setTimeout(chatHandlers, 0);
+                    setTimeout(setupSidebarTabs, 0);
                     return Chat();
                 }
                 else {
@@ -104,6 +119,8 @@ export function router(route: string): string {
             }
             return Login();
         case "#/":
+            return Home();
+        case "":
             return Home();
         default:
             return ErrorPage();
