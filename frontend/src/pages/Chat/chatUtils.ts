@@ -251,14 +251,23 @@ export function updateConnectionStatus(connected: boolean) {
         }
     }
 
+// Avatar cache to avoid redundant requests
+const avatarCache = new Map<number, string | null>();
+
 /**
  * Fetch user avatar from backend
  * @param userId - The user ID to get avatar for
  * @returns Promise resolving to blob URL or null if avatar doesn't exist
  */
 export async function getUserAvatar(userId: number): Promise<string | null> {
+    // Check cache first
+    if (avatarCache.has(userId)) {
+        return avatarCache.get(userId)!;
+    }
+
     try {
         const token = getAccessToken();
+        console.log(`[Avatar] Fetching avatar for user ID: ${userId}`);
         const response = await fetch(`http://${apiHost}:8080/users/getAvatar`, {
             method: 'GET',
             headers: {
@@ -268,13 +277,33 @@ export async function getUserAvatar(userId: number): Promise<string | null> {
         });
 
         if (!response.ok) {
+            console.log(`[Avatar] No avatar found for user ID: ${userId}`);
+            avatarCache.set(userId, null);
             return null;
         }
 
         const blob = await response.blob();
-        return URL.createObjectURL(blob);
+        const blobUrl = URL.createObjectURL(blob);
+        console.log(`[Avatar] Avatar loaded for user ID: ${userId}`);
+        
+        // Cache the result
+        avatarCache.set(userId, blobUrl);
+        return blobUrl;
     } catch (error) {
+        console.error(`[Avatar] Error fetching avatar for user ID: ${userId}`, error);
+        avatarCache.set(userId, null);
         return null;
+    }
+}
+
+/**
+ * Clear avatar cache (useful when avatar is updated)
+ */
+export function clearAvatarCache(userId?: number) {
+    if (userId !== undefined) {
+        avatarCache.delete(userId);
+    } else {
+        avatarCache.clear();
     }
 }
 

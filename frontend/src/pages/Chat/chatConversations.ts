@@ -33,6 +33,8 @@ export async function getConversations() {
 
 // Function to select a conversation and load messages
 export async function selectConversation(otherUserId: number, otherUserName: string) {
+    console.log(`[Chat] Selecting conversation with user ID: ${otherUserId}, name: ${otherUserName}`);
+    
     setActiveConversationId(otherUserId);
     setActiveConversationName(otherUserName);
 
@@ -44,12 +46,18 @@ export async function selectConversation(otherUserId: number, otherUserName: str
     // Update contact avatar with real image or first letter
     const contactAvatar = document.querySelector('.contact-avatar') as HTMLElement;
     if (contactAvatar) {
+        // First clear the avatar to avoid showing wrong avatar during loading
+        contactAvatar.innerHTML = '';
+        contactAvatar.textContent = otherUserName.charAt(0).toUpperCase();
+        
+        // Then try to load the real avatar
         const avatarUrl = await getUserAvatar(otherUserId);
+        console.log(`[Chat] Avatar URL for user ${otherUserId}:`, avatarUrl);
+        
         if (avatarUrl) {
             contactAvatar.innerHTML = `<img src="${avatarUrl}" alt="${otherUserName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
-        } else {
-            contactAvatar.textContent = otherUserName.charAt(0).toUpperCase();
         }
+        // If no avatar, keep the text initial that was already set
     }
 
     // Actualizar el estado online/offline dinámicamente
