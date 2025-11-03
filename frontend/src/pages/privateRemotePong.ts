@@ -141,6 +141,21 @@ export async function privateRemotePongHandlers() {
             startGame(inviteRoom);
             return;
         }
+        // If no room query param, check pending room in localStorage (set by chat invite flow)
+        try {
+            const pending = localStorage.getItem('pendingRemoteRoomId');
+            if (pending) {
+                // consume the pending id so it won't be reused accidentally
+                localStorage.removeItem('pendingRemoteRoomId');
+                roomId = pending;
+                isRoomCreator = false;
+                prepareGameUI();
+                startGame(pending);
+                return;
+            }
+        } catch (e) {
+            // ignore localStorage errors (e.g., privacy modes)
+        }
     } catch (err) {
         console.warn('Failed parsing invite room param', err);
     }

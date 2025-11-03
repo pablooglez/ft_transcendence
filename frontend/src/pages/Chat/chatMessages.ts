@@ -194,7 +194,7 @@ export function addMessageToUI(message: ChatMessage & { isSent: boolean }) {
         if (btn) {
             btn.addEventListener('click', (e) => {
                 const roomId = (e.currentTarget as HTMLElement).getAttribute('data-room');
-                if (roomId) window.location.hash = `#/pong/remote`;
+                if (roomId) window.location.hash = `#/private-remote-pong?room=${roomId}`;
             });
         }
     } else {
@@ -262,8 +262,8 @@ export function displayMessages(messages: any[]) {
             newBtn.addEventListener('click', (e) => {
                 const roomId = (e.currentTarget as HTMLElement).getAttribute('data-room');
                 if (roomId) {
-                    // Navigate to remote pong with room query param
-                    window.location.hash = `#/pong/remote?room=${roomId}`;
+                    // Navigate to private remote pong with room query param
+                    window.location.hash = `#/private-remote-pong?room=${roomId}`;
                 }
             });
         });

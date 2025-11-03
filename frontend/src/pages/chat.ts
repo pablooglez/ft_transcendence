@@ -848,8 +848,8 @@ export function chatHandlers() {
                 newBtn.addEventListener('click', (e) => {
                     const roomId = (e.currentTarget as HTMLElement).getAttribute('data-room');
                     if (roomId) {
-                        // Navigate to remote pong with room query param
-                        window.location.hash = `#/pong/remote?room=${roomId}`;
+                        // Navigate to private remote pong with room query param
+                        window.location.hash = `#/private-remote-pong?room=${roomId}`;
                     }
                 });
             });
@@ -894,7 +894,7 @@ export function chatHandlers() {
             if (btn) {
                 btn.addEventListener('click', (e) => {
                     const roomId = (e.currentTarget as HTMLElement).getAttribute('data-room');
-                    if (roomId) window.location.hash = `#/pong/remote`;
+                    if (roomId) window.location.hash = `#/private-remote-pong?room=${roomId}`;
                 });
             }
         } else {
@@ -1168,8 +1168,8 @@ export function chatHandlers() {
                 if (result && result.roomId) {
                     // Save roomId to localStorage for pending redirection
                     localStorage.setItem('pendingRemoteRoomId', result.roomId);
-                    // Automatically redirect to the remote room
-                    window.location.hash = `#/pong/remote?room=${result.roomId}`;
+                    // Automatically redirect to the private remote room
+                    window.location.hash = `#/private-remote-pong?room=${result.roomId}`;
                 }
             } catch (error) {
                 const errMsg = (error instanceof Error) ? error.message : String(error);

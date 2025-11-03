@@ -185,8 +185,8 @@ export function chatHandlers() {
                     if (result && result.roomId) {
                         // Save roomId to localStorage for pending redirection
                         localStorage.setItem('pendingRemoteRoomId', result.roomId);
-                        // Automatically redirect to the remote room
-                        window.location.hash = `#/pong/remote?room=${result.roomId}`;
+                        // Automatically redirect to the private remote room
+                        window.location.hash = `#/private-remote-pong?room=${result.roomId}`;
                     }
                 }
             } catch (error) {

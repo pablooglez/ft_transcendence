@@ -95,6 +95,8 @@ export function router(route: string): string {
                 return Settings();
             }
             return Login();
+        case "#/game":
+            return Game();
         case "#/game-stats":
             if (isLoggedIn()) {
                 setTimeout(gameStatsHandlers, 0);
