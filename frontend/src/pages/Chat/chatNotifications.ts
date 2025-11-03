@@ -160,11 +160,6 @@ export async function selectNotification(notificationId: number, title: string) 
     const contactName = document.getElementById('contact-name');
     if (contactName) contactName.textContent = title;
 
-    let addFriendBtn = document.getElementById('add-friend-btn') as HTMLButtonElement;
-    if (addFriendBtn) {
-        addFriendBtn.style.display = 'none';
-        }
-
     // Actualizar el estado online/offline dinámicamente
     const contactStatus = document.getElementById('contact-status');
     if (contactStatus) {

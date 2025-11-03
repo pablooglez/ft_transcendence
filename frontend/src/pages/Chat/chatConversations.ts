@@ -12,7 +12,6 @@ import {
     getBlockedUsers,
 } from "./chatState";
 import { getMessages, displayMessages, updateMessageInputVisibility } from "./chatMessages";
-import { updateFriendBtn } from "./chatFriends";
 import { updateBlockButtonUI } from "./chatBlockUsers";
 
 const apiHost = `${window.location.hostname}`;
@@ -51,36 +50,6 @@ export async function selectConversation(otherUserId: number, otherUserName: str
         } else {
             contactAvatar.textContent = otherUserName.charAt(0).toUpperCase();
         }
-    }
-
-    // Botón añadir/quitar amigo
-    let friendsSet = (window as any).friendsSet;
-    if (!friendsSet) {
-        friendsSet = new Set();
-        (window as any).friendsSet = friendsSet;
-    }
-    let addFriendBtn = document.getElementById('add-friend-btn') as HTMLButtonElement;
-    if (!addFriendBtn) {
-        const chatHeader = document.querySelector('.chat-header .contact-details');
-        if (chatHeader) {
-            addFriendBtn = document.createElement('button');
-            addFriendBtn.id = 'add-friend-btn';
-            addFriendBtn.className = 'add-friend-btn';
-            addFriendBtn.style.marginLeft = '10px';
-            chatHeader.appendChild(addFriendBtn);
-        }
-    }
-    updateFriendBtn(otherUserId);
-    if (addFriendBtn) {
-        addFriendBtn.style.display = 'block';
-        addFriendBtn.onclick = () => {
-            if (friendsSet.has(otherUserId)) {
-                friendsSet.delete(otherUserId);
-            } else {
-                friendsSet.add(otherUserId);
-            }
-            updateFriendBtn(otherUserId);
-        };
     }
 
     // Actualizar el estado online/offline dinámicamente
