@@ -115,6 +115,8 @@ export function router(route: string): string {
                 return GameStats();
             }
             return Login();
+        case "#/tournament":
+            return Tournament();
         case "#/":
             return Home();
         case "":
