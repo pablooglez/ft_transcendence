@@ -1100,9 +1100,20 @@ export function chatHandlers() {
         // Populate modal with profile data
         username.textContent = profile.username || 'Unknown';
         userId.textContent = profile.id?.toString() || '-';
-        avatar.textContent = profile.username?.charAt(0).toUpperCase() || '?';
         victories.textContent = profile.victories?.toString() || '0';
-        
+
+        // Load avatar asynchronously
+        const loadAvatar = async () => {
+            const { getUserAvatar } = await import('./Chat/chatUtils');
+            const avatarUrl = await getUserAvatar(profile.id);
+            if (avatarUrl) {
+                avatar.innerHTML = `<img src="${avatarUrl}" alt="${profile.username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+            } else {
+                avatar.textContent = profile.username?.charAt(0).toUpperCase() || '?';
+            }
+        };
+        loadAvatar();
+
         // Show modal
         modal.style.display = 'flex';
     }

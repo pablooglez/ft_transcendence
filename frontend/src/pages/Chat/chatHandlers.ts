@@ -10,7 +10,7 @@ import { getActiveConversationId,
          setActiveNotificationId,
          setActiveNotificationName,
          } from "./chatState";
-import { blockHandler } from "./chatBlockUsers";
+import { blockHandler, fetchBlockedUsers } from "./chatBlockUsers";
 import { sendGameInvitation } from "../../services/api";
 import { openNewChatModal, closeProfileModal } from "./chatModal";
 import { getAccessToken } from "../../state/authState";
@@ -40,6 +40,18 @@ export async function chatHandlers() {
 
     // Initialize WebSocket connection
     initializeWebSocket();
+
+    // Load blocked users from backend first, then load conversations
+    fetchBlockedUsers()
+        .then(() => {
+            // Load conversations after blocked users are loaded
+            loadConversationsAuto();
+        })
+        .catch(err => {
+            console.error("Failed to load blocked users on page load:", err);
+            // Load conversations anyway even if blocked users fail
+            loadConversationsAuto();
+        });
 
     // Eliminar el listener previo antes de añadirlo
     messageForm.removeEventListener('submit', handleMessageFormSubmit);

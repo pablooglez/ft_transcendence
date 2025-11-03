@@ -1,5 +1,5 @@
 import { getAccessToken } from "../../state/authState";
-import { getUsername } from "./chatUtils";
+import { getUsername, getUserAvatar } from "./chatUtils";
 import { UI_MESSAGES, CHAT_CONFIG } from "./chatConstants";
 import {
     getActiveConversationId,
@@ -9,9 +9,11 @@ import {
     setActiveConversationName,
     setLoadConversationsTimeout,
     getConnectedUsersSet,
+    getBlockedUsers,
 } from "./chatState";
 import { getMessages, displayMessages, updateMessageInputVisibility } from "./chatMessages";
 import { updateFriendBtn } from "./chatFriends";
+import { updateBlockButtonUI } from "./chatBlockUsers";
 
 const apiHost = `${window.location.hostname}`;
 
@@ -39,6 +41,17 @@ export async function selectConversation(otherUserId: number, otherUserName: str
     // Update the chat header
     const contactName = document.getElementById('contact-name');
     if (contactName) contactName.textContent = otherUserName;
+
+    // Update contact avatar with real image or first letter
+    const contactAvatar = document.querySelector('.contact-avatar') as HTMLElement;
+    if (contactAvatar) {
+        const avatarUrl = await getUserAvatar(otherUserId);
+        if (avatarUrl) {
+            contactAvatar.innerHTML = `<img src="${avatarUrl}" alt="${otherUserName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+        } else {
+            contactAvatar.textContent = otherUserName.charAt(0).toUpperCase();
+        }
+    }
 
     // Botón añadir/quitar amigo
     let friendsSet = (window as any).friendsSet;
@@ -95,6 +108,9 @@ export async function selectConversation(otherUserId: number, otherUserName: str
         blockButton.style.display = 'block';
     }
 
+    // Update block button state based on current blocked users
+    updateBlockButtonUI();
+
     // Show invite to game button
     const inviteBtn = document.getElementById('invite-game-btn') as HTMLButtonElement;
     if (inviteBtn) {
@@ -140,7 +156,7 @@ export async function loadConversationsAuto() {
                     </div>
                 `).join('');
 
-            // Then load usernames asynchronously
+            // Then load usernames and avatars asynchronously
             result.conversations.forEach(async (conv: any) => {
                 const username = await getUsername(conv.otherUserId);
                 const conversationItem = document.querySelector(`[data-user-id="${conv.otherUserId}"] .conversation-name`);
@@ -149,10 +165,15 @@ export async function loadConversationsAuto() {
                     conversationItem.setAttribute('data-username', username);
                 }
 
-                // Update avatar with first letter of username
-                const avatarElement = document.querySelector(`[data-user-id="${conv.otherUserId}"] .conversation-avatar`);
+                // Update avatar with real image or first letter of username
+                const avatarElement = document.querySelector(`[data-user-id="${conv.otherUserId}"] .conversation-avatar`) as HTMLElement;
                 if (avatarElement && username !== `User ${conv.otherUserId}`) {
-                    avatarElement.textContent = username.charAt(0).toUpperCase();
+                    const avatarUrl = await getUserAvatar(conv.otherUserId);
+                    if (avatarUrl) {
+                        avatarElement.innerHTML = `<img src="${avatarUrl}" alt="${username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+                    } else {
+                        avatarElement.textContent = username.charAt(0).toUpperCase();
+                    }
                 }
             });
 

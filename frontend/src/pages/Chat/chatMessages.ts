@@ -55,7 +55,7 @@ function showInfoMessage(message: string, messageResultElement: HTMLElement | nu
 export async function sendMessage(recipientId: number, content: string) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/1/messages`, {
+        const res = await fetch(`http://${apiHost}:8080/conversations/${recipientId}/messages`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,

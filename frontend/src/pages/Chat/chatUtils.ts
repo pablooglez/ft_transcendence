@@ -142,9 +142,10 @@ export async function loadAllUsers() {
 
 // Function to render user list with online/offline status
 export function renderUserList(users: any[], isOnline: boolean): string {
-    return users.map((user: any) => `
+    // Render initial HTML with text avatars
+    const html = users.map((user: any) => `
         <div class="user-search-item" data-user-id="${user.id}">
-            <div class="user-avatar">
+            <div class="user-avatar" id="user-avatar-${user.id}">
                 ${user.username.charAt(0).toUpperCase()}
                 <div class="user-status ${isOnline ? 'online' : 'offline'}"></div>
             </div>
@@ -157,6 +158,23 @@ export function renderUserList(users: any[], isOnline: boolean): string {
             </button>
         </div>
     `).join('');
+
+    // Load real avatars asynchronously
+    setTimeout(async () => {
+        for (const user of users) {
+            const avatarUrl = await getUserAvatar(user.id);
+            const avatarElement = document.getElementById(`user-avatar-${user.id}`);
+            if (avatarElement && avatarUrl) {
+                const statusIndicator = avatarElement.querySelector('.user-status');
+                avatarElement.innerHTML = `<img src="${avatarUrl}" alt="${user.username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+                if (statusIndicator) {
+                    avatarElement.appendChild(statusIndicator);
+                }
+            }
+        }
+    }, 0);
+
+    return html;
 }
 
 export function attachUserClickHandlers() {
@@ -219,7 +237,7 @@ export function getConnectedUsersList(): number[] {
 export function updateConnectionStatus(connected: boolean) {
         const statusIndicator = document.querySelector('#connection-status .status-indicator');
         const statusText = document.querySelector('#connection-status .status-text');
-        
+
         if (statusIndicator && statusText) {
             if (connected) {
                 statusIndicator.textContent = '●';
@@ -232,3 +250,48 @@ export function updateConnectionStatus(connected: boolean) {
             }
         }
     }
+
+/**
+ * Fetch user avatar from backend
+ * @param userId - The user ID to get avatar for
+ * @returns Promise resolving to blob URL or null if avatar doesn't exist
+ */
+export async function getUserAvatar(userId: number): Promise<string | null> {
+    try {
+        const token = getAccessToken();
+        const response = await fetch(`http://${apiHost}:8080/users/getAvatar`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'x-user-id': userId.toString()
+            }
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Create avatar element with fallback to text avatar
+ * @param userId - The user ID
+ * @param username - The username for text fallback
+ * @param cssClass - CSS class for the avatar element
+ * @returns Promise resolving to HTML string
+ */
+export async function createAvatarElement(userId: number, username: string, cssClass: string): Promise<string> {
+    const avatarUrl = await getUserAvatar(userId);
+
+    if (avatarUrl) {
+        return `<div class="${cssClass}"><img src="${avatarUrl}" alt="${username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/></div>`;
+    } else {
+        // Fallback to text avatar
+        return `<div class="${cssClass}">${username.charAt(0).toUpperCase()}</div>`;
+    }
+}
