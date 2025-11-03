@@ -36,6 +36,21 @@ export async function initializeWebSocket() {
                     isSent: false
                 });
                 loadConversationsDebounced();
+            } else if (message.type === 'user_deleted') {
+                // A user was deleted - refresh conversations automatically
+                console.log(`User ${message.userId} was deleted - refreshing conversations`);
+                loadConversationsDebounced();
+                
+                // If we're currently viewing the deleted user's conversation, clear it
+                const activeConversationId = getActiveConversationId();
+                if (activeConversationId === message.userId) {
+                    const messagesContainer = document.getElementById('messages-container');
+                    if (messagesContainer) {
+                        messagesContainer.innerHTML = '<div class="welcome-message">This user has been deleted.</div>';
+                    }
+                    const contactName = document.getElementById('contact-name');
+                    if (contactName) contactName.textContent = 'Deleted User';
+                }
             } else if (message.type === 'user_connected') {
                 if (message.userId) {
                     getConnectedUsersSet().add(message.userId);

@@ -1,6 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import * as chatService from "../services/chatService";
 import { extractUserId } from "../utils/auth";
+import * as conversationRepo from "../repositories/conversationRepository";
+import * as blockRepo from "../repositories/blockRepository";
+import * as websocketService from "../services/websocketService";
 
 export async function sendMessageController(req: FastifyRequest, reply: FastifyReply) {
     const { recipientId, content, messageType } = req.body as { 
@@ -32,6 +35,44 @@ export async function getConversationsController(req: FastifyRequest, reply: Fas
         if (err.message === 'User not authenticated') {
             return reply.code(401).send({ error: 'Unauthorized' });
         }
+        return reply.code(500).send({ error: err.message });
+    }
+}
+
+export async function deleteUserDataController(req: FastifyRequest, reply: FastifyReply) {
+    const { userId } = req.params as { userId: string };
+    const deletedUserId = parseInt(userId);
+    
+    try {
+        // First, get all conversations for this user to notify affected users
+        const conversations = conversationRepo.getConversationsForUser(deletedUserId);
+        
+        // Get all other users who have conversations with the deleted user
+        const affectedUserIds = new Set<number>();
+        conversations.forEach((conv: any) => {
+            if (conv.participant1_id === deletedUserId) {
+                affectedUserIds.add(conv.participant2_id);
+            } else {
+                affectedUserIds.add(conv.participant1_id);
+            }
+        });
+        
+        // Delete all conversations, messages (CASCADE), and blocks for the user
+        const conversationsDeleted = conversationRepo.deleteUserConversations(deletedUserId);
+        const blocksDeleted = blockRepo.deleteUserBlocks(deletedUserId);
+        
+        // Notify all affected users via WebSocket to refresh their conversations
+        affectedUserIds.forEach(affectedUserId => {
+            websocketService.notifyUserDeleted(affectedUserId, deletedUserId);
+        });
+        
+        return reply.send({ 
+            success: true,
+            conversationsDeleted: conversationsDeleted.changes,
+            blocksDeleted: blocksDeleted.changes,
+            usersNotified: affectedUserIds.size
+        });
+    } catch (err: any) {
         return reply.code(500).send({ error: err.message });
     }
 }

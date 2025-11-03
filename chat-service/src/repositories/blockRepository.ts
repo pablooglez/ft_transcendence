@@ -24,3 +24,9 @@ export function getBlockedUsers(user_id: number) {
     const stmt = db.prepare("SELECT blocked_id FROM blocked_users WHERE blocker_id = ?");
     return stmt.all(user_id);
 }
+
+export function deleteUserBlocks(user_id: number) {
+    // Delete all block relationships where the user is involved
+    const stmt = db.prepare("DELETE FROM blocked_users WHERE blocker_id = ? OR blocked_id = ?");
+    return stmt.run(user_id, user_id);
+}

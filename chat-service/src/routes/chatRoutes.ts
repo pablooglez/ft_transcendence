@@ -19,4 +19,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
     
     // GET /blocked - Get list of blocked users
     fastify.get('/blocked', chatController.getBlockedUsersController);
+    
+    // DELETE /users/:userId/data - Delete all chat data for a user (called when user is deleted)
+    fastify.delete('/users/:userId/data', chatController.deleteUserDataController);
 }

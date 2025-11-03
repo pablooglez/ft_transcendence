@@ -19,3 +19,10 @@ export function updateConversationTimestamp(conversation_id: number) {
     const stmt = db.prepare("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?");
     stmt.run(conversation_id);
 }
+
+export function deleteUserConversations(user_id: number) {
+    // Delete all conversations where the user is a participant
+    // Messages will be automatically deleted due to ON DELETE CASCADE
+    const stmt = db.prepare("DELETE FROM conversations WHERE participant1_id = ? OR participant2_id = ?");
+    return stmt.run(user_id, user_id);
+}

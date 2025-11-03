@@ -4,7 +4,7 @@ import { getAccessToken } from '../state/authState';
 const apiHost = window.location.hostname;
 
 export interface ChatMessage {
-    type: 'message' | 'user_connected' | 'user_disconnected' | 'typing' | 'stop_typing' | 'game_invitation' | 'connected_users_list';
+    type: 'message' | 'user_connected' | 'user_disconnected' | 'typing' | 'stop_typing' | 'game_invitation' | 'connected_users_list' | 'user_deleted';
     userId: number;
     conversationId?: number;
     content?: string;
