@@ -358,6 +358,24 @@ export function notifyGameInvitationRejected(fromUserId: number, rejectionData: 
     }
 }
 
+export function notifyUserDeleted(affectedUserId: number, deletedUserId: number): void {
+    const message: WebSocketMessage = {
+        type: 'user_deleted' as any,
+        userId: deletedUserId,
+        data: {
+            deletedUserId,
+            event_type: 'user_deleted'
+        }
+    };
+    
+    const sent = sendToUser(affectedUserId, message);
+    if (sent) {
+        console.log(`Notified user ${affectedUserId} about deletion of user ${deletedUserId}`);
+    } else {
+        console.log(`User ${affectedUserId} not connected - will see updated conversations on reconnect`);
+    }
+}
+
 // Cleanup function for periodic maintenance
 export function cleanupStaleConnections(): void {
     const now = Date.now();

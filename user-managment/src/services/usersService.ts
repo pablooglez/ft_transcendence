@@ -119,6 +119,23 @@ export async function userRemover(id: number) {
 	if (result.changes === 0) {
 		throw new Error("No user found with the given ID");
 	}
+	
+	// Delete chat data (conversations, messages, blocks) for this user
+	try {
+		const chatServiceUrl = process.env.CHAT_SERVICE_URL || 'http://chat-service:8083';
+		const response = await fetch(`${chatServiceUrl}/users/${id}/data`, {
+			method: 'DELETE'
+		});
+		
+		if (!response.ok) {
+			console.error(`Failed to delete chat data for user ${id}:`, await response.text());
+		} else {
+			console.log(`Chat data deleted successfully for user ${id}`);
+		}
+	} catch (error) {
+		console.error(`Error deleting chat data for user ${id}:`, error);
+		// Don't throw - we still want to delete the user even if chat cleanup fails
+	}
 }
 
 export async function getAllUsers() {
