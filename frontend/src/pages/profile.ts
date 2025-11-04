@@ -1,6 +1,7 @@
 import { getAccessToken, isLoggedIn } from "../state/authState";
 import { getElement } from "./Login/loginDOM";
 import { getUserIdByUsername, getUserById, getUserStatsById } from "../services/api";
+import { fetchCurrentUser } from "./Login/loginService";
 
 const apiHost = `${window.location.hostname}`;
 
@@ -14,7 +15,7 @@ export function Profile() {
       </div>
     `;
   }
-  setTimeout(() => profileHandlers(accessToken), 0);
+  setTimeout(() => profileHandlers(), 0);
   setTimeout(() => setupProfileTabs(), 0);
   return `
     <div class="profile-container">
@@ -71,7 +72,8 @@ export function Profile() {
   `;
 }
 
-export function profileHandlers(accessToken: string) {
+export function profileHandlers() {
+  const accessToken = getAccessToken();
   const usernameField = document.querySelector<HTMLParagraphElement>("#username")!;
   const emailField = document.querySelector<HTMLParagraphElement>("#useremail")!;
   const avatarField = document.querySelector<HTMLParagraphElement>("#avatar")!;
@@ -117,20 +119,19 @@ export function profileHandlers(accessToken: string) {
           window.location.hash = '#/error';
           return;
         }
-      } else {
+      } 
+      else {
         // Fetch data for current user
-        const res = await fetch(`http://${apiHost}:8080/users/me`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to fetch user data');
+         const cached = localStorage.getItem("user");
+        if (cached) {
+          userData = JSON.parse(cached);
+        } else {
+          const data = await fetchCurrentUser(accessToken);
+          userData = data.user;
+          if (userData) localStorage.setItem("user", JSON.stringify(userData));
         }
-        userData = data.user;
         userId = userData.id;
+
       }
 
       if (usernameField) {
@@ -152,7 +153,7 @@ export function profileHandlers(accessToken: string) {
       }
 
       // Fetch stats and history for dashboard
-      fetchStatsAndHistory(userId);
+      fetchStatsAndHistory(userId, urlUsername ? null : userData);
 
       // Fetch friends and render (call user-management endpoint directly)
       try {
@@ -186,26 +187,40 @@ export function profileHandlers(accessToken: string) {
     }
   }
 
-  async function fetchStatsAndHistory(userId: number) {
+  async function fetchStatsAndHistory(userId: number, userData?: any) {
     try {
-      // Fetch stats
-      const stats = await getUserStatsById(userId);
-      if (!stats) {
-        throw new Error('Stats not found');
+      let victories: number;
+      let defeats: number;
+
+      if (userData && userData.victories !== undefined && userData.defeats !== undefined) {
+        // Use stats from userData
+        victories = userData.victories;
+        defeats = userData.defeats;
+      } else {
+        // Fetch stats
+        const stats = await getUserStatsById(userId);
+        if (!stats) {
+          throw new Error('Stats not found');
+        }
+        victories = stats.victories || 0;
+        defeats = stats.defeats || 0;
       }
 
       // Fetch match history
-      const historyRes = await fetch(`http://${apiHost}:8080/matches/player/${userId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      const history = await historyRes.json();
+      let history: any[];
+      if (userData && userData.matchHistory) {
+        history = userData.matchHistory;
+      } else {
+        const historyRes = await fetch(`http://${apiHost}:8080/matches/player/${userId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        history = await historyRes.json();
+      }
 
       // Display stats
-      const victories = stats.victories || 0;
-      const defeats = stats.defeats || 0;
       const games = victories + defeats;
       const winRate = games > 0 ? Math.round((victories / games) * 100) : 0;
 
