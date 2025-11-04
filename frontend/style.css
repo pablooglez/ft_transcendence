@@ -2977,40 +2977,6 @@ header {
   overflow: hidden;
 }
 
-/* Expanded profile card to include friends column */
-.profile-card.expanded {
-  max-width: 900px;
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 1.5rem;
-  padding: 1.5rem;
-}
-.profile-card.expanded .profile-tab-content {
-  grid-column: 1 / span 1;
-}
-.profile-card.expanded #friends-list,
-.profile-card.enhanced #friends-list {
-  text-align: left;
-  max-height: 420px;
-  overflow-y: auto;
-}
-.friends-list {
-  list-style: none;
-  padding: 0;
-  margin: 0.5rem 0 0 0;
-}
-.friends-list .friend-item {
-  padding: 8px 10px;
-  border-radius: 6px;
-  margin-bottom: 6px;
-  background: rgba(33,34,90,0.6);
-  border: 1px solid rgba(66,243,250,0.08);
-}
-.friends-list .friend-item a {
-  color: #42F3FA;
-  text-decoration: none;
-}
-
 /* === Navigation Tabs === */
 .profile-nav {
   display: table;
