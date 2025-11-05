@@ -310,23 +310,12 @@ export function profileHandlers() {
             }
           }
           const matchId = match.id || match._id || match.uuid || '';
-          return `<p class="match-history-item" data-match-id="${matchId}" style="cursor:pointer; padding: 8px; border: 1px solid #42f3fa; margin: 4px 0; border-radius: 4px;">Match: ${playersText} - Score: ${scoreLeft}-${scoreRight} - Winner: ${winnerDisplay}</p>`;
+          return `<a href="#/game-stats?id=${encodeURIComponent(matchId)}" class="match-history-item" data-match-id="${matchId}" style="display:block; padding: 8px; border: 1px solid #42f3fa; margin: 4px 0; border-radius: 4px; color:inherit; text-decoration:none">${playersText}</a>`;
         }));
 
         historyContainer.innerHTML = entriesHtml.join('');
 
-        // Add click handlers for match history items
-        setTimeout(() => {
-          document.querySelectorAll('.match-history-item').forEach((item) => {
-            item.addEventListener('click', (e) => {
-              const target = e.currentTarget as HTMLElement;
-              const matchId = target.getAttribute('data-match-id');
-              if (matchId) {
-                window.location.hash = `#/game-stats?id=${encodeURIComponent(matchId)}`;
-              }
-            });
-          });
-        }, 0);
+        // Items are anchors linking to #/game-stats?id=... so no JS click handler needed
       } else {
         historyContainer.innerHTML = '<p>No matches found.</p>';
       }
