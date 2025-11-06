@@ -3184,6 +3184,77 @@ header {
   background: #1e1e4f;
 }
 
+/* Friends List Styles */
+.friends-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.friend-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin: 8px 0;
+  background: rgba(24, 23, 65, 0.4);
+  border: 1px solid rgba(66, 243, 250, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.friend-item:hover {
+  background: rgba(24, 23, 65, 0.6);
+  border-color: rgba(66, 243, 250, 0.5);
+  box-shadow: 0 0 10px rgba(66, 243, 250, 0.3);
+}
+
+.friend-item a {
+  color: #cfd8ff;
+  text-decoration: none;
+  flex: 1;
+  margin-left: 12px;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+.friend-item a:hover {
+  color: #42f3fa;
+}
+
+/* Status Indicator (Online/Offline) */
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.status-indicator.online {
+  background: #00ff88;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.8),
+              0 0 16px rgba(0, 255, 136, 0.4);
+  animation: pulse-online 2s infinite;
+}
+
+.status-indicator.offline {
+  background: #ff3333;
+  box-shadow: 0 0 4px rgba(255, 51, 51, 0.5);
+}
+
+@keyframes pulse-online {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.8),
+                0 0 16px rgba(0, 255, 136, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(0, 255, 136, 1),
+                0 0 24px rgba(0, 255, 136, 0.6);
+  }
+}
+
 /* ********************************* */
 /*            Profile END            */
 /* ********************************* */
