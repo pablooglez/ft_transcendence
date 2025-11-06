@@ -4,6 +4,7 @@ import { getActiveConversationId } from "./chatState";
 import { UI_MESSAGES } from "./chatConstants";
 import { websocketClient, ChatMessage } from "../../services/websocketClient";
 import { loadConversationsDebounced } from "./chatConversations";
+import { acceptFriendInvitation, rejectFriendInvitation } from "./chatInvitations";
 
 const apiHost = `${window.location.hostname}`;
 
@@ -168,15 +169,17 @@ export function addMessageToUI(message: ChatMessage & { isSent: boolean }) {
     // Create message bubble
     const messageDiv = document.createElement('div');
     messageDiv.className = `message-bubble ${message.isSent ? 'message-sent' : 'message-received'}`;
-        
+    
     const time = new Date(message.timestamp || Date.now()).toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
     });
-        
+    
+    const isGameInvite = (message.data && message.data.event_type === 'game_invitation_message' && message.data.room_id) || message.type === 'game_invitation' || (message as any).messageType === 'pong-invite';
+    const isFriendInvite = (message.data && message.data.event_type === 'friend_invitation_message') || (message as any).messageType === 'friend-invite';
+    
     // Detect if this new message is a pong invitation (WS payload may include data)
-    const isInvite = (message.data && message.data.event_type === 'game_invitation_message' && message.data.room_id) || message.type === 'game_invitation' || (message as any).messageType === 'pong-invite';
-    if (isInvite) {
+    if (isGameInvite) {
         const room = (message.data && message.data.room_id) || ((message.content && (message.content.match(/<b>([^<]+)<\/b>/) || [])[1])) || '';
         messageDiv.innerHTML = `
             <div class="message-content">
@@ -194,6 +197,27 @@ export function addMessageToUI(message: ChatMessage & { isSent: boolean }) {
                 if (roomId) window.location.hash = `#/private-remote-pong?room=${roomId}`;
             });
         }
+    } else if (isFriendInvite) {
+    messageDiv.innerHTML = `
+      <div class="message-content">
+        🤝 Do you wanna be my friend? :)
+        <br>
+        <button class="join-remote-pong-btn accept-friend-btn">Add friend</button>
+        <button class="join-remote-pong-btn reject-friend-btn">Reject</button>
+      </div>
+      <div class="message-time">${time}</div>
+    `;
+
+    const acceptBtn = messageDiv.querySelector('.accept-friend-btn') as HTMLElement;
+    const rejectBtn = messageDiv.querySelector('.reject-friend-btn') as HTMLElement;
+
+    acceptBtn.addEventListener('click', async () => {
+      await acceptFriendInvitation();
+    });
+
+    rejectBtn.addEventListener('click', async () => {
+      await rejectFriendInvitation();
+    });
     } else {
         messageDiv.innerHTML = `
             <div class="message-content">${message.content}</div>
