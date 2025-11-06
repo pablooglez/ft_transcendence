@@ -132,9 +132,24 @@ export async function privateRemotePongHandlers() {
 
     // If ?room=... present, join that room; otherwise create and register a private room in backend DB
     try {
-        const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
-        const inviteRoom = urlParams.get('room');
-        if (inviteRoom) {
+        // Robustly extract room id from hash. Support multiple param names (room, room_id, roomId, id)
+        function extractRoomFromHash(): string | null {
+            try {
+                const query = window.location.hash.split('?')[1] || '';
+                const params = new URLSearchParams(query);
+                const cand = params.get('room') || params.get('room_id') || params.get('roomId') || params.get('id');
+                if (cand) return cand;
+                // fallback: regex search anywhere in hash
+                const m = window.location.hash.match(/[?&](?:room|room_id|roomId|id)=([^&]+)/);
+                if (m && m[1]) return decodeURIComponent(m[1]);
+            } catch (e) {
+                // ignore
+            }
+            return null;
+        }
+
+        const inviteRoom = extractRoomFromHash();
+        if (inviteRoom && inviteRoom !== 'undefined' && inviteRoom !== 'null') {
             roomId = inviteRoom;
             isRoomCreator = false;
             prepareGameUI();
@@ -143,10 +158,13 @@ export async function privateRemotePongHandlers() {
         }
         // If no room query param, check pending room in localStorage (set by chat invite flow)
         try {
-            const pending = localStorage.getItem('pendingRemoteRoomId');
-            if (pending) {
+            // support a couple of pending keys as some clients might use different names
+            const pending = localStorage.getItem('pendingRemoteRoomId') || localStorage.getItem('pendingRoomId') || localStorage.getItem('pendingRemoteRoom');
+            if (pending && pending !== 'undefined' && pending !== 'null') {
                 // consume the pending id so it won't be reused accidentally
-                localStorage.removeItem('pendingRemoteRoomId');
+                try { localStorage.removeItem('pendingRemoteRoomId'); } catch {};
+                try { localStorage.removeItem('pendingRoomId'); } catch {};
+                try { localStorage.removeItem('pendingRemoteRoom'); } catch {};
                 roomId = pending;
                 isRoomCreator = false;
                 prepareGameUI();

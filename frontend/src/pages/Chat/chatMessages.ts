@@ -186,7 +186,11 @@ export function addMessageToUI(message: ChatMessage & { isSent: boolean }) {
     // Detect if this new message is a pong invitation (WS payload may include data)
     const isInvite = (message.data && message.data.event_type === 'game_invitation_message' && message.data.room_id) || message.type === 'game_invitation' || (message as any).messageType === 'pong-invite';
     if (isInvite) {
-        const room = (message.data && message.data.room_id) || ((message.content && (message.content.match(/<b>([^<]+)<\/b>/) || [])[1])) || '';
+        let room = (message.data && message.data.room_id) || ((message.content && (message.content.match(/<b>([^<]+)<\/b>/) || [])[1])) || '';
+        if (typeof room === 'string') {
+            room = room.trim();
+            if (!room || room === 'undefined' || room === 'null') room = '';
+        }
         messageDiv.innerHTML = `
             <div class="message-content">
                 🎮 Invitación a Pong<br>
@@ -197,10 +201,10 @@ export function addMessageToUI(message: ChatMessage & { isSent: boolean }) {
         `;
         // Attach click handler
         const btn = messageDiv.querySelector('.join-remote-pong-btn') as HTMLElement | null;
-        if (btn) {
+            if (btn) {
             btn.addEventListener('click', (e) => {
                 const roomId = (e.currentTarget as HTMLElement).getAttribute('data-room');
-                if (roomId) window.location.hash = `#/private-remote-pong?room=${roomId}`;
+                if (roomId && roomId !== 'undefined' && roomId !== 'null') window.location.hash = `#/private-remote-pong?room=${roomId}`;
             });
         }
     } else {
@@ -240,7 +244,11 @@ export function displayMessages(messages: any[]) {
             || msg.message_type === 'friend-invite';
         let messageHtml = '';
         if (isPongInvite) {
-            const room = (msg.data && msg.data.room_id) || (msg.content && (msg.content.match(/<b>([^<]+)<\/b>/) || [])[1]) || '';
+            let room = (msg.data && msg.data.room_id) || (msg.content && (msg.content.match(/<b>([^<]+)<\/b>/) || [])[1]) || '';
+            if (typeof room === 'string') {
+                room = room.trim();
+                if (!room || room === 'undefined' || room === 'null') room = '';
+            }
             // Render pong invitation message
             messageHtml = `
                 <div class="message-bubble ${isSent ? 'message-sent' : 'message-received'} pong-invite">

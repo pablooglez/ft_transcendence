@@ -58,7 +58,7 @@ export class WebSocketClient {
             this.ws.onmessage = (event) => {
                 try {
                     const message: ChatMessage = JSON.parse(event.data);
-                    
+
                     // Notify all message handlers
                     this.messageHandlers.forEach(handler => handler(message));
                 } catch (error) {
