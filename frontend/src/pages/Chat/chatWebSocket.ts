@@ -62,9 +62,15 @@ export async function initializeWebSocket() {
             } catch (e) {}
 
             if (message.type === 'message') {
+                let sendByUser;
+                if (message.userId === getActiveConversationId())
+                    sendByUser = false;
+                else
+                    sendByUser = true;
+                console.log(message.content);
                 addMessageToUI({
                     ...message,
-                    isSent: false
+                    isSent: sendByUser
                 });
                 loadConversationsDebounced();
             } else if (message.type === 'typing') {
