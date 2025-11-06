@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import { getAccessToken, refreshAccessToken, getUserIdFromToken } from "../state/authState";
+import { getAccessToken, refreshAccessToken, getUserIdFromToken, isLoggedIn } from "../state/authState";
 
 import {
     WINNING_SCORE,
@@ -44,6 +44,9 @@ let gameState: GameState = {
     gameEnded: false,
 };
 
+let matchRecorded = false; // ensure we only register a finished match once per room
+let resultRecorded = false; // ensure we only send victory/defeat once
+
 // Page (no lobby) — direct private remote match
 export function privateRemotePongPage(): string {
     return `
@@ -53,7 +56,6 @@ export function privateRemotePongPage(): string {
 
         <div class="scoreboard-container">
             <div id="scoreboard" class="scoreboard">0 : 0</div>
-            <button id="playAgainBtn" class="pong-button hidden">Play Again</button>
         </div>
 
         <canvas id="pongCanvas" width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}"></canvas>
@@ -102,6 +104,8 @@ function cleanup() {
     isGameRunning = false;
     isRoomCreator = false;
     gameInitialized = false;
+    resultRecorded = false;
+        matchRecorded = false; // Reset matchRecorded during cleanup
     try { document.getElementById("scoreboard")?.classList.add("hidden"); } catch (e) {}
     // Ensure powerup disabled when cleaning up private remote room
     try {
@@ -207,8 +211,58 @@ export async function privateRemotePongHandlers() {
 function prepareGameUI() {
     (document.getElementById("pongCanvas")!).style.display = "block";
     (document.getElementById("winnerMessage")!).style.display = "none";
-    (document.getElementById("playAgainBtn")!).classList.add("hidden");
     try { document.getElementById("scoreboard")!.classList.remove("hidden"); } catch (e) {}
+}
+
+// Register finished match into server-side-pong so it appears in match history
+async function registerMatchToPongService(winnerSide: "left" | "right", score: { left: number; right: number }) {
+    try {
+        // Prevent concurrent duplicate registrations by marking early.
+        if (matchRecorded) return null;
+        matchRecorded = true;
+        if (!roomId) return null;
+
+        // Try to fetch room info to obtain player ids
+        const roomRes = await postApi(`/game/rooms/${roomId}`, "GET");
+        let players: string[] = [];
+        if (roomRes.ok) {
+            const room = await roomRes.json();
+            players = Array.isArray(room.players) ? room.players : [];
+        }
+
+        // Determine winner id when possible (players stored in order: left=0,right=1)
+        let winner: string | null = null;
+        if (players.length >= 2) {
+            winner = (winnerSide === "left") ? players[0] : players[1];
+        } else {
+            // fallback to store symbolic winner
+            winner = winnerSide;
+        }
+
+        // If this is a local_* room or room info couldn't be fetched, do not send the local room id
+        // because it may not exist in the persistent rooms DB and would trigger a FK error.
+        const postRoomId = (roomId && !String(roomId).startsWith('local_') && roomRes && roomRes.ok) ? roomId : null;
+        const body: any = {
+            roomId: postRoomId,
+            players: players,
+            winner: winner,
+            score: score,
+            endedAt: Date.now(),
+        };
+
+        const res = await postApiJson(`/game/matches`, body);
+        if (!res.ok) {
+            console.error('[PrivateRemotePong] Failed to register match:', res.status, await res.text());
+            return null;
+        }
+        const data = await res.json();
+        matchRecorded = true;
+        console.log('[PrivateRemotePong] Match registered, id=', data.matchId);
+        return data.matchId || null;
+    } catch (err) {
+        console.error('[PrivateRemotePong] Error registering match:', err);
+        return null;
+    }
 }
 
 function startGame(roomIdToJoin: string) {
@@ -251,13 +305,14 @@ function startGame(roomIdToJoin: string) {
         if (!gameInitialized) {
             gameInitialized = true;
             postApi(`/game/${data.roomId}/init`).then(async () => {
+                    // Ensure powerup is enabled for private matches (increase ball speed on paddle hit)
+                    try {
+                        await postApi(`/game/${data.roomId}/powerup?enabled=true`);
+                    } catch (e) {
+                        console.warn('[PrivateRemotePong] Failed to enable powerup for room', data.roomId, e);
+                    }
+                    // Only the room creator should call resume to actually start the match
                     if (isRoomCreator) {
-                        try {
-                            // Enable powerup for this private remote room
-                            await postApi(`/game/${data.roomId}/powerup?enabled=true`);
-                        } catch (e) {
-                            console.warn('[PrivateRemotePong] Failed to enable powerup for room', data.roomId, e);
-                        }
                         try { await postApi(`/game/${data.roomId}/resume`); } catch (e) { /* ignore */ }
                     }
             });
@@ -290,6 +345,25 @@ function startGame(roomIdToJoin: string) {
         endGame();
     });
 
+    // Server may request clients to leave the room (e.g. admin/cleanup). Handle gracefully.
+    socket.on('forceLeaveRoom', (payload: any) => {
+        try {
+            cleanup();
+            const targetHash = (typeof isLoggedIn === 'function' && isLoggedIn()) ? '#/chat' : '#/';
+            window.location.hash = targetHash;
+        } catch (e) { /* ignore */ }
+    });
+
+    socket.on('matchEnded', (payload: any) => {
+        try {
+            const roleInfo = document.getElementById('roleInfo');
+            if (roleInfo) roleInfo.textContent = payload?.message || 'Match ended';
+            cleanup();
+            const targetHash = (typeof isLoggedIn === 'function' && isLoggedIn()) ? '#/chat' : '#/';
+            window.location.hash = targetHash;
+        } catch (e) { /* ignore */ }
+    });
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
@@ -314,7 +388,11 @@ function startCountdownAndResume(roomToStart: string) {
 }
 
 function checkWinner() {
-    if (!gameState.gameEnded || !isGameRunning) return;
+    // Trigger winner handling when server indicates game ended. Don't rely on
+    // local `isGameRunning` because the server may set gameEnded while the
+    // local flag is false; registerMatchToPongService uses `matchRecorded` to
+    // avoid duplicate registrations.
+    if (!gameState.gameEnded) return;
 
     const winnerMsg = document.getElementById("winnerMessage")!;
     const winning = (gameState as any).winningScore ?? WINNING_SCORE;
@@ -323,9 +401,21 @@ function checkWinner() {
     winnerMsg.style.display = "block";
 
     const winnerSide = winner;
-    if (playerRole === winnerSide) {
-        sendVictoryToUserManagement().catch(err => console.error('Failed to send victory:', err));
+    // Register match and send victory/defeat similar to remotePong
+    if (!resultRecorded) {
+        resultRecorded = true;
+        if (playerRole === winnerSide) {
+            registerMatchToPongService(winnerSide, { left: gameState.scores.left, right: gameState.scores.right })
+                .then((matchId) => {
+                    if (matchId) console.log('[PrivateRemotePong] Match saved with id', matchId);
+                }).catch((e) => console.warn('Failed to register match', e));
+
+            sendVictoryToUserManagement().catch(err => console.error('Failed to send victory:', err));
+        } else {
+            sendDefeatToUserManagement().catch(err => console.error('Failed to send defeat:', err));
+        }
     }
+
     endGame();
 }
 
@@ -342,15 +432,68 @@ async function sendVictoryToUserManagement() {
         const res = await postApiJson(`/users/addVictory`, { userId });
         if (!res.ok) {
             console.error("Failed to post victory:", res.status, await res.text());
+        } else {
+            console.log(`Victory recorded for user ${userId}`);
         }
     } catch (err) {
         console.error("Error sending victory:", err);
     }
 }
 
+async function sendDefeatToUserManagement() {
+    try {
+        let userId = getUserIdFromToken();
+        if (!userId) {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) return;
+            const user = JSON.parse(userStr);
+            userId = user?.id ?? user?.userId ?? null;
+        }
+        if (!userId) return;
+        const res = await postApiJson(`/users/addDefeat`, { userId });
+        if (!res.ok) {
+            console.error("Failed to post defeat:", res.status, await res.text());
+        } else {
+            console.log(`Defeat recorded for user ${userId}`);
+        }
+    } catch (err) {
+        console.error("Error sending defeat:", err);
+    }
+}
+
 function endGame() {
     isGameRunning = false;
-    (document.getElementById("playAgainBtn")!).classList.remove("hidden");
+    // Hide any leftover global "Play Again" button that might be present from other pages
+    try {
+        const pb = document.getElementById('playAgainBtn');
+        if (pb) (pb as HTMLElement).style.display = 'none';
+    } catch (e) { /* ignore */ }
+    // After a short delay, leave the room and reload to return to the private-pong entry
+    setTimeout(() => {
+        // Inform server explicitly we are leaving so it can remove the player immediately
+        try {
+            if (socket && roomId) {
+                const userId = getUserIdFromToken() || (() => {
+                    const userStr = localStorage.getItem('user');
+                    if (!userStr) return undefined;
+                    try { const u = JSON.parse(userStr); return u?.id ?? u?.userId; } catch { return undefined; }
+                })();
+                try {
+                    socket.emit('leaveRoom', { roomId, userId });
+                } catch (e) { /* ignore */ }
+            }
+        } catch (e) { /* ignore */ }
+
+        // Disconnect and cleanup local resources
+        cleanup();
+
+        // Navigate to chat or home via hash change (router listens to hash changes)
+        try {
+            const targetHash = (typeof isLoggedIn === 'function' && isLoggedIn()) ? '#/chat' : '#/';
+            window.location.hash = targetHash;
+        } catch (e) { /* ignore */ }
+
+    }, 3000);
 }
 
 function draw() {
@@ -389,5 +532,5 @@ function draw() {
     }
 
     ctx.shadowBlur = 0;
-    try { document.getElementById("scoreboard")!.textContent = `${gameState.scores.left} : ${gameState.scores.right}`; } catch {}
+    document.getElementById("scoreboard")!.textContent = `${gameState.scores.left} : ${gameState.scores.right}`;
 }

@@ -75,6 +75,20 @@ export function saveRoom(roomId: string, state: any, players: string[], isPublic
 
 export function saveMatch(match: { id?: string; roomId?: string | null; players: string[]; winner?: string | null; score: any; endedAt?: number }): string {
   const id = match.id || `match_${Math.random().toString(36).substring(2, 10)}`;
+  // Deduplicate: if an identical match (same room, players and score) already exists,
+  // return its id instead of inserting a new row. This prevents duplicate records
+  // when clients accidentally send the same match twice.
+  try {
+    const existingStmt = db.prepare('SELECT id FROM matches WHERE room_id = ? AND players = ? AND score = ? LIMIT 1');
+    const existing = existingStmt.get(match.roomId || null, JSON.stringify(match.players), JSON.stringify(match.score));
+    if (existing && existing.id) {
+      return existing.id;
+    }
+  } catch (err: any) {
+    // If the query fails for any reason, continue and attempt to insert the match.
+    console.warn('Could not run deduplication query for matches:', err && err.message ? err.message : err);
+  }
+
   const stmt = db.prepare('INSERT OR REPLACE INTO matches (id, room_id, players, winner, score, ended_at) VALUES (?, ?, ?, ?, ?, ?)');
   const endedAt = match.endedAt ? new Date(match.endedAt).toISOString() : new Date().toISOString();
   stmt.run(id, match.roomId || null, JSON.stringify(match.players), match.winner || null, JSON.stringify(match.score), endedAt);
