@@ -2,6 +2,7 @@ import { getAccessToken } from "../state/authState";
 import { getUserIdByUsername, getUserById, getUserStatsById } from "../services/api";
 import { fetchCurrentUser } from "./Login/loginService";
 import { getMatchesByPlayerId } from "../services/api";
+import { isUserOnline, onPresenceChange, offPresenceChange } from "../state/presenceState";
 
 (function setupUserUpdateListener() {
   if (!(window as any).__profile_user_updated_listener_installed) {
@@ -92,6 +93,13 @@ export function Profile() {
 
 export function profileHandlers() {
   const accessToken = getAccessToken();
+  
+  // Early return if no access token
+  if (!accessToken) {
+    console.error('No access token available');
+    return;
+  }
+  
   const usernameField = document.querySelector<HTMLParagraphElement>("#username")!;
   const emailField = document.querySelector<HTMLParagraphElement>("#useremail")!;
   const avatarField = document.querySelector<HTMLParagraphElement>("#avatar")!;
@@ -116,7 +124,7 @@ export function profileHandlers() {
   }
 
   // Fetch user data
-  async function fetchUserData() {
+  async function fetchUserData(token: string) {
     try {
       const urlUsername = getUsernameFromUrl();
       let userData: any;
@@ -141,7 +149,7 @@ export function profileHandlers() {
       else {
         // Fetch fresh data for current user — do NOT read from local cache.
         try {
-          const data = await fetchCurrentUser(accessToken);
+          const data = await fetchCurrentUser(token);
           userData = data?.user ?? null;
         } catch (e) {
           console.error('[Profile] fetchCurrentUser failed', e);
@@ -167,7 +175,7 @@ export function profileHandlers() {
       const avatarIMG = await fetch(`http://${apiHost}:8080/users/getAvatar`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           "x-user-id": userId.toString(),
         },
       });
@@ -179,29 +187,7 @@ export function profileHandlers() {
       fetchStatsAndHistory(userId, urlUsername ? null : userData);
 
       // Fetch friends and render (call user-management endpoint directly)
-      try {
-        const friendsDiv = document.getElementById('friends-list');
-        const res = await fetch(`http://${apiHost}:8080/users/getFriends`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'x-user-id': String(userId)
-          }
-        });
-        if (!res.ok) {
-          if (friendsDiv) friendsDiv.innerHTML = '<p>No friends found or error.</p>';
-        } else {
-          const data = await res.json();
-          const friends = data.friends || [];
-          if (friendsDiv) {
-            if (friends.length === 0) friendsDiv.innerHTML = '<p>No friends yet.</p>';
-            else friendsDiv.innerHTML = `<ul class="friends-list">${friends.map((f: any) => `<li class="friend-item" data-id="${f.id}"><a href="#/profile/${encodeURIComponent(f.username)}">${f.username}</a></li>`).join('')}</ul>`;
-          }
-        }
-      } catch (e) {
-        const friendsDiv = document.getElementById('friends-list');
-        if (friendsDiv) friendsDiv.innerHTML = '<p>Error loading friends.</p>';
-      }
+      await fetchAndRenderFriends(userId, token);
     } catch (err: any) {
       console.error("Error fetching user data:", err);
       if (usernameField) {
@@ -209,6 +195,89 @@ export function profileHandlers() {
       }
     }
   }
+
+  // Fetch friends and render with online/offline status
+  async function fetchAndRenderFriends(userId: number, token: string) {
+    try {
+      const friendsDiv = document.getElementById('friends-list');
+      const res = await fetch(`http://${apiHost}:8080/users/getFriends`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-user-id': String(userId)
+        }
+      });
+      
+      if (!res.ok) {
+        if (friendsDiv) friendsDiv.innerHTML = '<p>No friends found or error.</p>';
+        return;
+      }
+      
+      const data = await res.json();
+      const friends = data.friends || [];
+      
+      if (friendsDiv) {
+        if (friends.length === 0) {
+          friendsDiv.innerHTML = '<p>No friends yet.</p>';
+        } else {
+          renderFriendsList(friends);
+        }
+      }
+    } catch (e) {
+      const friendsDiv = document.getElementById('friends-list');
+      if (friendsDiv) friendsDiv.innerHTML = '<p>Error loading friends.</p>';
+    }
+  }
+
+  // Render friends list with online/offline indicators
+  function renderFriendsList(friends: any[]) {
+    const friendsDiv = document.getElementById('friends-list');
+    if (!friendsDiv) return;
+    
+    const friendsHtml = friends.map((friend: any) => {
+      const isOnline = isUserOnline(friend.id);
+      const statusClass = isOnline ? 'online' : 'offline';
+      const statusTitle = isOnline ? 'Online' : 'Offline';
+      
+      return `
+        <li class="friend-item" data-friend-id="${friend.id}">
+          <span class="status-indicator ${statusClass}" title="${statusTitle}"></span>
+          <a href="#/profile/${encodeURIComponent(friend.username)}">${friend.username}</a>
+        </li>
+      `;
+    }).join('');
+    
+    friendsDiv.innerHTML = `<ul class="friends-list">${friendsHtml}</ul>`;
+  }
+
+  // Update a specific friend's online status in the DOM
+  function updateFriendStatus(friendId: number, isOnline: boolean) {
+    const friendItem = document.querySelector(`.friend-item[data-friend-id="${friendId}"]`);
+    if (!friendItem) return;
+    
+    const indicator = friendItem.querySelector('.status-indicator');
+    if (!indicator) return;
+    
+    indicator.classList.remove('online', 'offline');
+    indicator.classList.add(isOnline ? 'online' : 'offline');
+    indicator.setAttribute('title', isOnline ? 'Online' : 'Offline');
+  }
+
+  // Presence change handler
+  const presenceChangeHandler = (userId: number, isOnline: boolean) => {
+    updateFriendStatus(userId, isOnline);
+  };
+
+  // Subscribe to presence changes
+  onPresenceChange(presenceChangeHandler);
+
+  // Clean up on page unload
+  window.addEventListener('hashchange', function cleanupPresenceHandler() {
+    if (!window.location.hash.includes('/profile')) {
+      offPresenceChange(presenceChangeHandler);
+      window.removeEventListener('hashchange', cleanupPresenceHandler);
+    }
+  });
 
   async function fetchStatsAndHistory(userId: number, userData?: any) {
     try {
@@ -370,7 +439,7 @@ export function profileHandlers() {
     // No legend/labels on the piechart (kept minimal)
   }
 
-  fetchUserData();
+  fetchUserData(accessToken);
 }
 
 export function setupProfileTabs() {
