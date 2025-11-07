@@ -49,7 +49,7 @@ export async function checkAlreadyFriend() {
 
         const token = getAccessToken();
         const res = await fetch(`http://${apiHost}:8080/users/checkFriend`, {
-            method: 'GET',
+            method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
@@ -60,7 +60,7 @@ export async function checkAlreadyFriend() {
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
         const friend = await res.json();
-        if (friend)
+        if (friend.friend_id)
             return true;
         else
             return false;
