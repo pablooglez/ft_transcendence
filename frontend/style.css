@@ -2564,6 +2564,11 @@ header {
 #startGameBtn, #playAgainBtn {
   position: relative;
   z-index: 1;
+  margin-bottom: 5px;
+}
+
+#startGameBtn.hidden {
+  display: none;
 }
 
 .hidden {
