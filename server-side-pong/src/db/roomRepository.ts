@@ -108,7 +108,30 @@ export function saveMatch(match: { id?: string; roomId?: string | null; players:
 }
 
 export function getMatchesByPlayer(playerId: string) {
-  // players stored as JSON array; use a LIKE query to match the serialized player id
+  // Prefer exact match via the normalized match_players table (stores user ids)
+  try {
+    const stmt = db.prepare(`
+      SELECT m.id, m.room_id, m.players, m.winner, m.score, m.ended_at
+      FROM matches m
+      JOIN match_players mp ON mp.match_id = m.id
+      WHERE mp.player_id = ?
+      ORDER BY m.ended_at DESC
+    `);
+    const rows = stmt.all(playerId);
+    if (rows && rows.length > 0) {
+      return rows.map((r: any) => ({
+        id: r.id,
+        roomId: r.room_id,
+        players: JSON.parse(r.players),
+        winner: r.winner,
+        score: JSON.parse(r.score),
+        endedAt: r.ended_at,
+      }));
+    }
+  } catch (err: any) {
+    // ignore and fallback
+  }
+
   const pattern = `%"${playerId}"%`;
   const stmt = db.prepare('SELECT id, room_id, players, winner, score, ended_at FROM matches WHERE players LIKE ? ORDER BY ended_at DESC');
   const rows = stmt.all(pattern);
@@ -120,38 +143,6 @@ export function getMatchesByPlayer(playerId: string) {
     score: JSON.parse(r.score),
     endedAt: r.ended_at,
   }));
-  // Prefer exact match via the normalized match_players table (stores user ids)
-  try {
-    const stmt = db.prepare(`
-      SELECT m.id, m.room_id, m.players, m.winner, m.score, m.ended_at
-      FROM matches m
-      JOIN match_players mp ON mp.match_id = m.id
-      WHERE mp.player_id = ?
-      ORDER BY m.ended_at DESC
-    `);
-    const rows = stmt.all(playerId);
-    return rows.map((r: any) => ({
-      id: r.id,
-      roomId: r.room_id,
-      players: JSON.parse(r.players),
-      winner: r.winner,
-      score: JSON.parse(r.score),
-      endedAt: r.ended_at,
-    }));
-  } catch (err: any) {
-    // Fallback for older DBs where match_players doesn't exist: use JSON LIKE search
-    const pattern = `%"${playerId}"%`;
-    const stmt = db.prepare('SELECT id, room_id, players, winner, score, ended_at FROM matches WHERE players LIKE ? ORDER BY ended_at DESC');
-    const rows = stmt.all(pattern);
-    return rows.map((r: any) => ({
-      id: r.id,
-      roomId: r.room_id,
-      players: JSON.parse(r.players),
-      winner: r.winner,
-      score: JSON.parse(r.score),
-      endedAt: r.ended_at,
-    }));
-  }
 }
 
 export function getRoom(roomId: string): { id: string, state: any, players: string[] } | null {
@@ -187,16 +178,15 @@ export function deleteRoom(roomId: string) {
 }
 
 export function addPlayerToRoom(roomId: string, playerId: string) {
-  // Insert player atomically to avoid race conditions
+  const ensureRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, state, public) VALUES (?, ?, ?)');
+  ensureRoom.run(roomId, JSON.stringify({}), 1);
+
   const insertPlayer = db.prepare(`
-    INSERT OR IGNORE INTO room_players (room_id, player_id) 
-    SELECT ?, ? WHERE NOT EXISTS (
+    INSERT OR IGNORE INTO room_players (room_id, player_id)
+    SELECT ?, ?
+    WHERE NOT EXISTS (
       SELECT 1 FROM room_players WHERE room_id = ? AND player_id = ?
     )
   `);
   insertPlayer.run(roomId, playerId, roomId, playerId);
-  
-  // Ensure room exists
-  const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (id, state, public) VALUES (?, ?, ?)');  
-  insertRoom.run(roomId, JSON.stringify({}), 1);
 }

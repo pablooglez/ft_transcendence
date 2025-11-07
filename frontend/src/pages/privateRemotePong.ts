@@ -184,10 +184,11 @@ export async function privateRemotePongHandlers() {
 
     // Create & register private room. Try /game/rooms { private: true } then fallback.
     try {
-        let res = await postApiJson("/game/rooms", { private: true });
+        // Try to create a persistent remote room (room_...)
+        let res = await postApiJson("/game/remote-rooms", { public: false });
         if (!res.ok) {
-            // fallback endpoint used in remotePong
-            res = await postApi("/game/remote-rooms");
+            // fallback to local room creation if remote endpoint not available
+            res = await postApiJson("/game/rooms", { private: true });
         }
         if (!res.ok) throw new Error(`Failed to create private room: ${res.status}`);
         const body = await res.json();
@@ -195,6 +196,18 @@ export async function privateRemotePongHandlers() {
         if (!newRoomId) throw new Error("Server did not return room id");
         roomId = String(newRoomId);
         isRoomCreator = true;
+        try {
+            const userId = getUserIdFromToken() || (() => {
+                const userStr = localStorage.getItem('user');
+                if (!userStr) return undefined;
+                try { const u = JSON.parse(userStr); return u?.id ?? u?.userId; } catch { return undefined; }
+            })();
+            if (userId) {
+                await postApiJson(`/game/rooms/${roomId}/add-player`, { playerId: String(userId) });
+            }
+        } catch (e) {
+            console.warn('[PrivateRemotePong] Failed to persist creator in room', e);
+        }
 
         // Show shareable invite for the creator
         const roleInfo = document.getElementById("roleInfo")!;
@@ -241,7 +254,7 @@ async function registerMatchToPongService(winnerSide: "left" | "right", score: {
 
         // If this is a local_* room or room info couldn't be fetched, do not send the local room id
         // because it may not exist in the persistent rooms DB and would trigger a FK error.
-        const postRoomId = (roomId && !String(roomId).startsWith('local_') && roomRes && roomRes.ok) ? roomId : null;
+        const postRoomId = (roomId && roomRes && roomRes.ok) ? roomId : null;
         const body: any = {
             roomId: postRoomId,
             players: players,
@@ -249,6 +262,8 @@ async function registerMatchToPongService(winnerSide: "left" | "right", score: {
             score: score,
             endedAt: Date.now(),
         };
+
+        console.log('[PrivateRemotePong] Enviando /game/matches payload:', JSON.stringify(body, null, 2));
 
         const res = await postApiJson(`/game/matches`, body);
         if (!res.ok) {
@@ -281,12 +296,26 @@ function startGame(roomIdToJoin: string) {
         socket!.emit("joinRoom", payload);
     });
 
-    socket.on("roomJoined", (data: { roomId: string, role: "left" | "right" }) => {
+    socket.on("roomJoined", async (data: { roomId: string, role: "left" | "right" }) => {
         roomId = data.roomId;
         playerRole = data.role;
         const roleInfo = document.getElementById("roleInfo")!;
         roleInfo.textContent = `You are: ${playerRole} in ${roomId}. Waiting for opponent...`;
+
         window.history.replaceState(null, '', `#/private-remote-pong?room=${data.roomId}`);
+        
+        try {
+            const userId = getUserIdFromToken() || (() => {
+                const userStr = localStorage.getItem('user');
+                if (!userStr) return undefined;
+                try { const u = JSON.parse(userStr); return u?.id ?? u?.userId; } catch { return undefined; }
+            })();
+            if (userId && roomId) {
+                await postApiJson(`/game/rooms/${roomId}/add-player`, { playerId: String(userId) });
+            }
+        } catch (e) {
+            console.warn('[PrivateRemotePong] Failed to persist player in room', e);
+        }
     });
 
     socket.on('roomFull', (payload: { roomId:string }) => {
@@ -324,6 +353,9 @@ function startGame(roomIdToJoin: string) {
 
     socket.on("gameState", (state: GameState) => {
         gameState = state;
+        if (!isGameRunning && !state.gameEnded) {
+            isGameRunning = true;
+        }
         draw();
         if (state.gameEnded) checkWinner();
     });
