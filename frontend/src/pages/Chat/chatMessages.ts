@@ -15,7 +15,7 @@ let typingTimeout: ReturnType<typeof setTimeout> | null = null;
 let isTyping = false;
 
 /**
- * Sanitiza el texto para evitar inyección de HTML
+ * Sanitize the text to prevent HTML injection
  */
 function sanitizeText(text: string): string {
     const div = document.createElement('div');
@@ -121,7 +121,7 @@ export const handleMessageFormSubmit = async (e: Event) => {
     
     // Validate message length
     if (content.length > MAX_MESSAGE_LENGTH) {
-        showErrorMessage(`El mensaje es demasiado largo (máximo ${MAX_MESSAGE_LENGTH} caracteres)`, messageResult);
+        showErrorMessage(`The message is too long (maximum ${MAX_MESSAGE_LENGTH} characters)`, messageResult);
         return;
     }
     
@@ -196,9 +196,9 @@ export function addMessageToUI(message: ChatMessage & { isSent: boolean }) {
         }
         messageDiv.innerHTML = `
             <div class="message-content">
-                🎮 Invitación a Pong<br>
+                🎮 Pong Invitation<br>
                 <b>Sala:</b> <span class="room-id">${room}</span><br>
-                <button class="join-remote-pong-btn" data-room="${room}">Entrar a la partida</button>
+                <button class="join-remote-pong-btn" data-room="${room}">Join the game</button>
             </div>
             <div class="message-time">${time}</div>
         `;
