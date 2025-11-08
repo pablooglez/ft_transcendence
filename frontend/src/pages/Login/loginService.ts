@@ -23,7 +23,7 @@ export async function login(username: string, password: string) {
       try {
         data = await res.json();
       } catch {
-        data = {}; // prevent JSON parse errors for non-JSON responses
+        data = {};
       }
  
         if (res.ok && data.accessToken) {
@@ -65,13 +65,12 @@ export async function logout() {
         },
         credentials: "include",
       });
-      // Cerrar el WebSocket de chat si está abierto
+
       try {
-        // Importar el cliente WebSocket y desconectar
+
         const { websocketClient } = await import("../../services/websocketClient");
         websocketClient.disconnect();
       } catch (wsError) {
-        console.warn("No se pudo cerrar el WebSocket de chat:", wsError);
       }
       clearAuth();
       localStorage.removeItem("user");
@@ -101,13 +100,13 @@ export async function logoutOutsideLoginPage() {
         },
         credentials: "include",
       });
-      // Cerrar el WebSocket de chat si está abierto
+
       try {
-        // Importar el cliente WebSocket y desconectar
+
         const { websocketClient } = await import("../../services/websocketClient");
         websocketClient.disconnect();
       } catch (wsError) {
-        console.warn("No se pudo cerrar el WebSocket de chat:", wsError);
+
       }
       clearAuth();
       localStorage.removeItem("user");
