@@ -38,10 +38,26 @@ export function router(route: string): string {
         setTimeout(remoteTournamentPongHandlers, 0);
         return remoteTournamentPongPage();
     }
+    // Handle profile routes with username parameter first
+    if (route.match(/^#\/profile\/.+/)) {
+        if (isLoggedIn()) {
+            setTimeout(profileSettingsHandlers, 0);
+            return ProfileSettings();
+        }
+        return Login();
+    }
+    // Handle profile settings (own profile)
     if (route.startsWith("#/profile")) {
         if (isLoggedIn()) {
             setTimeout(profileSettingsHandlers, 0);
             return ProfileSettings();
+        }
+        return Login();
+    }
+    // Handle game-stats with optional query param (e.g. #/game-stats?id=...)
+    if (route.startsWith("#/game-stats")) {
+        if (isLoggedIn()) {
+            return GameStats();
         }
         return Login();
     }
@@ -50,18 +66,6 @@ export function router(route: string): string {
             return ErrorPage();
         case "#/terms":
             return TermsPage();
-        case "#/profile":
-            if (isLoggedIn()) {
-                setTimeout(profileHandlers, 0);
-                return Profile();
-            }
-            return Login();
-        case route.match(/^#\/profile\/.+/)?.input:
-            if (isLoggedIn()) {
-                setTimeout(profileHandlers, 0);
-                return Profile();
-            }
-            return Login();
         case "#/about":
             return About();
         case "#/login":
@@ -114,10 +118,12 @@ export function router(route: string): string {
             return Game();
         case "#/game-stats":
             if (isLoggedIn()) {
-                setTimeout(gameStatsHandlers, 0);
+                // GameStats() will call gameStatsHandlers(accessToken) itself, avoid double-calling without token
                 return GameStats();
             }
             return Login();
+        case "#/tournament":
+            return Tournament();
         case "#/":
             return Home();
         case "":

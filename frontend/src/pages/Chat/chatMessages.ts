@@ -4,8 +4,15 @@ import { getActiveConversationId } from "./chatState";
 import { UI_MESSAGES } from "./chatConstants";
 import { websocketClient, ChatMessage } from "../../services/websocketClient";
 import { loadConversationsDebounced } from "./chatConversations";
+import { acceptFriendInvitation, rejectFriendInvitation } from "./chatInvitations";
 
 const apiHost = `${window.location.hostname}`;
+
+const MAX_MESSAGE_LENGTH = 200;
+
+// Typing indicator state
+let typingTimeout: ReturnType<typeof setTimeout> | null = null;
+let isTyping = false;
 
 /**
  * Sanitiza el texto para evitar inyección de HTML
@@ -111,34 +118,34 @@ export const handleMessageFormSubmit = async (e: Event) => {
         showErrorMessage(UI_MESSAGES.ENTER_MESSAGE, messageResult);
         return;
     }
+    
+    // Validate message length
+    if (content.length > MAX_MESSAGE_LENGTH) {
+        showErrorMessage(`El mensaje es demasiado largo (máximo ${MAX_MESSAGE_LENGTH} caracteres)`, messageResult);
+        return;
+    }
+    
     try {
         showInfoMessage(UI_MESSAGES.SENDING_MESSAGE, messageResult);
-        // Send message via HTTP API (for persistence)
+        // Send message via HTTP API (for persistence and WebSocket notification)
         const httpResult = await sendMessage(recipientId, content);
-        // Send message via WebSocket (for real-time delivery)
-        const wsMessage: ChatMessage = {
+        
+        // Add message to UI immediately (sent message)
+        const messageToDisplay: ChatMessage = {
             type: 'message',
             userId: getCurrentUserId(),
             recipientId: recipientId,
             content: content,
             timestamp: new Date().toISOString()
         };
-        const wsSent = websocketClient.sendMessage(wsMessage);
-        if (wsSent) {
-            if (messageResult) {
-                messageResult.innerHTML = `<span class="success">${UI_MESSAGES.MESSAGE_SENT_SUCCESS}</span>`;
-            }
-            // Add message to UI immediately (sent message)
-            addMessageToUI({
-                ...wsMessage,
-                isSent: true
-            });
-        } else {
-            if (messageResult) {
-                messageResult.innerHTML = `<span class="success">${UI_MESSAGES.MESSAGE_SENT_HTTP_ONLY}</span>`;
-            }
-        }
+        
+        addMessageToUI({
+            ...messageToDisplay,
+            isSent: true
+        });
+        
         if (messageResult) {
+            messageResult.innerHTML = `<span class="success">${UI_MESSAGES.MESSAGE_SENT_SUCCESS}</span>`;
             messageResult.className = 'message-result success';
         }
         // Auto-refresh conversations list after sending message
@@ -171,16 +178,22 @@ export function addMessageToUI(message: ChatMessage & { isSent: boolean }) {
     // Create message bubble
     const messageDiv = document.createElement('div');
     messageDiv.className = `message-bubble ${message.isSent ? 'message-sent' : 'message-received'}`;
-        
+    
     const time = new Date(message.timestamp || Date.now()).toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
     });
-        
+    
+    const isGameInvite = (message.data && message.data.event_type === 'game_invitation_message' && message.data.room_id) || message.type === 'game_invitation' || (message as any).messageType === 'pong-invite';
+    const isFriendInvite = (message.data && message.data.event_type === 'friend_invitation_message') || (message as any).messageType === 'friend-invite';
+    
     // Detect if this new message is a pong invitation (WS payload may include data)
-    const isInvite = (message.data && message.data.event_type === 'game_invitation_message' && message.data.room_id) || message.type === 'game_invitation' || (message as any).messageType === 'pong-invite';
-    if (isInvite) {
-        const room = (message.data && message.data.room_id) || ((message.content && (message.content.match(/<b>([^<]+)<\/b>/) || [])[1])) || '';
+    if (isGameInvite) {
+        let room = (message.data && message.data.room_id) || ((message.content && (message.content.match(/<b>([^<]+)<\/b>/) || [])[1])) || '';
+        if (typeof room === 'string') {
+            room = room.trim();
+            if (!room || room === 'undefined' || room === 'null') room = '';
+        }
         messageDiv.innerHTML = `
             <div class="message-content">
                 🎮 Invitación a Pong<br>
@@ -191,12 +204,64 @@ export function addMessageToUI(message: ChatMessage & { isSent: boolean }) {
         `;
         // Attach click handler
         const btn = messageDiv.querySelector('.join-remote-pong-btn') as HTMLElement | null;
-        if (btn) {
+            if (btn) {
             btn.addEventListener('click', (e) => {
                 const roomId = (e.currentTarget as HTMLElement).getAttribute('data-room');
-                if (roomId) window.location.hash = `#/private-remote-pong?room=${roomId}`;
+                if (roomId && roomId !== 'undefined' && roomId !== 'null') window.location.hash = `#/private-remote-pong?room=${roomId}`;
             });
         }
+    } else if (isFriendInvite) {
+        if (message.isSent === false) {
+            messageDiv.className = `message-bubble friend-invitation-received`;
+            messageDiv.innerHTML = `
+            <div class="message-content">
+                🤝 Do you wanna be my friend? :)
+                <br>
+                <button class="join-remote-pong-btn accept-friend-btn">Add friend</button>
+                <button class="join-remote-pong-btn reject-friend-btn">Reject</button>
+            </div>
+            <div class="message-time">${time}</div>
+            `;
+
+            const acceptBtn = messageDiv.querySelector('.accept-friend-btn') as HTMLElement;
+            const rejectBtn = messageDiv.querySelector('.reject-friend-btn') as HTMLElement;
+        
+            acceptBtn.addEventListener('click', async () => {
+            await acceptFriendInvitation();
+                const friendBtn = document.getElementById('invite-friend-btn') as HTMLButtonElement;
+
+                if (friendBtn) {
+                    friendBtn.style.display = 'none';
+
+                    messageDiv.className = `message-bubble friend-invitation-received`;
+                    messageDiv.innerHTML = `
+                    <div class="message-content">
+                        Do you wanna be my friend? :)
+                        <br>
+                        <div class='friend-action-result'>✅ Friend accepted</div>
+                    </div>
+                    <div class="message-time">${time}</div>
+                    `;
+                }
+            });
+        
+            rejectBtn.addEventListener('click', async () => {
+            await rejectFriendInvitation();
+            messageDiv.className = `message-bubble friend-invitation-received-rejected`;
+            });
+
+        } else {
+            messageDiv.className = `message-bubble friend-invitation-sent`;
+            messageDiv.innerHTML = `
+            <div class="message-content">
+                🤝 Do you wanna be my friend? :)
+                <br>
+            </div>
+            <div class="message-time">${time}</div>
+            `;
+        }
+
+
     } else {
         messageDiv.innerHTML = `
             <div class="message-content">${message.content}</div>
@@ -229,9 +294,20 @@ export function displayMessages(messages: any[]) {
         const isPongInvite = (msg.data && msg.data.event_type === 'game_invitation_message' && msg.data.room_id)
             || msg.message_type === 'pong-invite'
             || (msg.data && msg.data.room_id);
+        // Detect friend invitation
+        const isFriendInvite = (msg.data && msg.data.event_type === 'friend_invitation_message')
+            || msg.message_type === 'friend-invite';
+        const isFriendInviteAccepted = (msg.data && msg.data.event_type === 'friend_invitation_message')
+            || msg.message_type === 'friend-invite-accepted';
+        const isFriendInviteRejected = (msg.data && msg.data.event_type === 'friend_invitation_message')
+            || msg.message_type === 'friend-invite-rejected';
         let messageHtml = '';
         if (isPongInvite) {
-            const room = (msg.data && msg.data.room_id) || (msg.content && (msg.content.match(/<b>([^<]+)<\/b>/) || [])[1]) || '';
+            let room = (msg.data && msg.data.room_id) || (msg.content && (msg.content.match(/<b>([^<]+)<\/b>/) || [])[1]) || '';
+            if (typeof room === 'string') {
+                room = room.trim();
+                if (!room || room === 'undefined' || room === 'null') room = '';
+            }
             // Render pong invitation message
             messageHtml = `
                 <div class="message-bubble ${isSent ? 'message-sent' : 'message-received'} pong-invite">
@@ -243,7 +319,58 @@ export function displayMessages(messages: any[]) {
                     <div class="message-time">${new Date(msg.timestamp || msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
             `;
-    } else {
+        } else if (isFriendInvite) {
+            // Render pong invitation message
+            if (!isSent) {
+            messageHtml = `
+                <div class="message-bubble ${isSent ? 'friend-invitation-sent' : 'friend-invitation-received'} pong-invite">
+                    <div class="message-content">
+                        ${msg.content}
+                        <br>
+                        <button class='join-remote-pong-btn accept-friend-btn'>Add friend</button>
+                        <button class='join-remote-pong-btn reject-friend-btn'>Reject</button>
+                    </div>
+                    <div class="message-time">${new Date(msg.timestamp || msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+            `;
+            } else {
+                messageHtml = `
+                    <div class="message-bubble ${isSent ? 'friend-invitation-sent' : 'friend-invitation-received'} pong-invite">
+                        <div class="message-content">
+                            ${msg.content}
+                            <br>
+                        </div>
+                        <div class="message-time">${new Date(msg.timestamp || msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                `;
+
+            }         
+        } else if (isFriendInviteAccepted) {
+            // Render pong invitation message
+            messageHtml = `
+                <div class="message-bubble ${isSent ? 'friend-invitation-sent' : 'friend-invitation-received'} pong-invite">
+                    <div class="message-content">
+                        ${msg.content}
+                        <br>
+                        <div class='friend-action-result'>✅ Friend accepted</div>
+                    </div>
+                    <div class="message-time">${new Date(msg.timestamp || msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+            `;
+        } else if (isFriendInviteRejected) {
+            // Render pong invitation message
+            messageHtml = `
+                <div class="message-bubble ${isSent ? 'friend-invitation-sent-rejected' : 'friend-invitation-received-rejected'} pong-invite">
+                    <div class="message-content">
+                        ${msg.content}
+                        <br>
+                       <div class='friend-action-result'>❌ Friend request rejected</div>
+                    </div>
+                    <div class="message-time">${new Date(msg.timestamp || msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+            `;
+        }
+        else {
             messageHtml = `
                 <div class="message-bubble ${isSent ? 'message-sent' : 'message-received'}">
                     <div class="message-content">${msg.content}</div>
@@ -268,6 +395,13 @@ export function displayMessages(messages: any[]) {
             });
         });
     }, 0);
+    const acceptFriendBtn = document.getElementById('accept-friend-btn') as HTMLButtonElement;
+
+    if (acceptFriendBtn) {
+        acceptFriendBtn.addEventListener('click', async () => {
+            alert("Lo pilla");
+        })
+    }
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
@@ -280,5 +414,56 @@ export function updateMessageInputVisibility() {
         if (messageForm) messageForm.style.display = 'flex';
     } else {
         if (messageForm) messageForm.style.display = 'none';
+    }
+}
+
+/**
+ * Handle typing indicator - send typing event when user starts typing
+ */
+function handleTyping() {
+    const activeConversationId = getActiveConversationId();
+    if (!activeConversationId || !websocketClient.isConnected()) {
+        return;
+    }
+
+    // Send "typing" event if not already typing
+    if (!isTyping) {
+        isTyping = true;
+        websocketClient.sendMessage({
+            type: 'typing',
+            userId: getCurrentUserId(),
+            recipientId: activeConversationId,
+            conversationId: activeConversationId
+        });
+    }
+
+    // Clear existing timeout
+    if (typingTimeout) {
+        clearTimeout(typingTimeout);
+    }
+
+    // Set timeout to send "stop_typing" after 1 second of no typing
+    typingTimeout = setTimeout(() => {
+        isTyping = false;
+        websocketClient.sendMessage({
+            type: 'stop_typing',
+            userId: getCurrentUserId(),
+            recipientId: activeConversationId,
+            conversationId: activeConversationId
+        });
+    }, 1000);
+}
+
+/**
+ * Setup typing indicator on message input
+ */
+export function setupTypingIndicator() {
+    const messageContentInput = document.getElementById('message-content') as HTMLInputElement;
+    
+    if (messageContentInput) {
+        // Remove existing listener to avoid duplicates
+        messageContentInput.removeEventListener('input', handleTyping);
+        // Add typing event listener
+        messageContentInput.addEventListener('input', handleTyping);
     }
 }

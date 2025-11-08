@@ -6,67 +6,59 @@ import { findConversation, createConversation } from "../repositories/conversati
 import { createMessage } from "../repositories/messageRepository";
 
 
-export async function sendGameInvitation(fromUserId: number, toUserId: number, gameType: string = 'pong', jwtToken?: string) {
-    // 1. Validate that user is not trying to invite themselves
+export async function sendGameInvitation(fromUserId: number, toUserId: number, gameType: string = 'pong') {
+
     if (fromUserId === toUserId) {
         throw new Error("Cannot invite yourself to a game");
     }
 
-    // 2. Validate that users are not blocked
     const blocked = blockRepo.areUsersBlocked(fromUserId, toUserId);
     if (blocked) {
         throw new Error("Cannot send invitation: users are blocked");
     }
 
-    // 3. (allow multiple invitations) Removed single-invitation restriction so multiple pending invites are allowed
-
-    // 4. creates room via HTTP if gameType requires it
     let roomId: string | undefined = undefined;
+    console.log("Entra en sendInvitation");
     if (gameType === 'pong') {
-        const gatewayUrl = process.env.GATEWAY_URL || 'http://gateway:8080';
-        if (!jwtToken) {
-            throw new Error('JWT token must be provided as argument to sendGameInvitation');
-        }
         try {
-            // Request a PRIVATE room for the invitation so it won't appear in public lobby
-            const res = await fetch(`${gatewayUrl}/game/remote-rooms`, {
+            // Create private room via gateway so behaviour matches frontend's private room creation
+            const res = await fetch(`http://gateway:8080/game/rooms`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${jwtToken}`
                 },
-                body: JSON.stringify({ public: false }) // <-- request private room
+                body: JSON.stringify({ private: true })
             });
             if (res.ok) {
                 const data = await res.json();
-                roomId = data.roomId || data.id || data.room_id;
+                roomId = data.roomId ?? data.id ?? data.room_id ?? null;
             } else {
-                // do not block invitation creation if room creation fails
                 const text = await res.text();
-                console.warn("Failed to create private room for invitation:", res.status, text);
+                console.warn("Failed to create private room via gateway for invitation:", res.status, text);
             }
         } catch (err) {
-            console.warn('Error creating private room for invitation:', err);
-            // don't throw; continue without roomId
+            console.warn('Error creating private room via gateway for invitation:', err);
         }
     }
 
-    // SAve roomId in the invitation and send invite message in conversation
+    // If we couldn't create a room, abort the invitation flow to avoid sending invalid links
+    if (!roomId) {
+        throw new Error('Failed to create private room for invitation');
+    }
+
     let conversation = await findConversation(fromUserId, toUserId);
     if (!conversation) {
         await createConversation(fromUserId, toUserId);
         conversation = await findConversation(fromUserId, toUserId);
     }
     if (roomId && conversation) {
-        const joinUrl = `#/private-remote-pong?room=${roomId}`; // link directly to the private room
+        const joinUrl = `#/private-remote-pong?room=${roomId}`;
         const inviteHtml = `🎮 Invitación a Pong: <b>${roomId}</b> <a href='${joinUrl}' class='join-remote-pong-btn'>Unirse a la sala</a>`;
         await createMessage(conversation.id, fromUserId, inviteHtml, 'pong-invite');
     }
 
-    // 5. Create the invitation with roomId
     const invitationId = gameInvitationRepo.createInvitation(fromUserId, toUserId, gameType, 2, roomId);
 
-    // 6. Send message in the conversation to both users with the room_id and button
     try {
         const invitationData = {
             id: invitationId,
@@ -86,7 +78,13 @@ export async function sendGameInvitation(fromUserId: number, toUserId: number, g
             data: invitationData
         };
         websocketService.sendToConversation(fromUserId, toUserId, message);
-        console.log(`🎮 Game invitation message sent to conversation between ${fromUserId} and ${toUserId}`);
+        // Diagnostic: check if recipient was online when sending
+        try {
+            const recipientOnline = websocketService.isUserConnected(toUserId);
+            console.log(`🎮 Game invitation attempted from ${fromUserId} -> ${toUserId}. Recipient online: ${recipientOnline}`);
+        } catch (e) {
+            console.log(`🎮 Game invitation message sent to conversation between ${fromUserId} and ${toUserId}`);
+        }
     } catch (wsError) {
         console.warn(`Failed to send game invitation message:`, wsError);
     }
@@ -100,59 +98,47 @@ export async function sendGameInvitation(fromUserId: number, toUserId: number, g
 }
 
 export function getPendingInvitations(userId: number) {
-    // Expire old invitations first
+
     gameInvitationRepo.expireOldInvitations();
-    
-    // Get pending invitations for the user
+
     return gameInvitationRepo.getPendingInvitationsForUser(userId);
 }
 
 export function getSentInvitations(userId: number) {
-    // Expire old invitations first
+
     gameInvitationRepo.expireOldInvitations();
-    
-    // Get sent invitations from the user
+
     return gameInvitationRepo.getSentInvitations(userId);
 }
 
-export async function acceptGameInvitation(invitationId: number, userId: number, jwtToken?: string) {
-    // 1. Get the invitation
+export async function acceptGameInvitation(invitationId: number, userId: number) {
+
     const invitation = gameInvitationRepo.getInvitationById(invitationId);
     
     if (!invitation) {
         throw new Error("Invitation not found");
     }
 
-    // 3. Validate that invitation is still pending
     if (invitation.status !== 'pending') {
         throw new Error("Invitation has expired");
     }
 
-    // 5. Update invitation status to accepted
     gameInvitationRepo.updateInvitationStatus(invitationId, 'accepted');
 
-    // 6. Join opponent to the room if roomId exists (via HTTP)
     if (invitation.room_id) {
-        if (!jwtToken) {
-            console.warn('JWT token must be provided as argument to acceptGameInvitation');
-        } else {
-            try {
-                const gatewayUrl = process.env.GATEWAY_URL || 'http://gateway:8080';
-                await fetch(`${gatewayUrl}/game/rooms/${invitation.room_id}/add-player`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${jwtToken}`
-                    },
-                    body: JSON.stringify({ playerId: String(userId) })
-                });
-            } catch (err) {
-                console.warn('No se pudo unir al usuario a la sala remota:', err);
-            }
+        try {
+            await fetch(`http://pong-service:7000/rooms/${invitation.room_id}/add-player`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ playerId: String(userId) })
+            });
+        } catch (err) {
+            console.warn('No se pudo unir al usuario a la sala remota:', err);
         }
     }
 
-    // 7. Notify both users with the roomId if exists
     try {
         const acceptanceData = {
             invitation_id: invitationId,
@@ -161,9 +147,9 @@ export async function acceptGameInvitation(invitationId: number, userId: number,
             game_type: invitation.game_type,
             room_id: invitation.room_id || null
         };
-        // Notify creator
+
         websocketService.notifyGameInvitationAccepted(invitation.from_user_id, acceptanceData);
-        // Notify accepter
+
         websocketService.notifyGameInvitationAccepted(userId, acceptanceData);
         console.log(` Game invitation ${invitationId} accepted by user ${userId} (room: ${acceptanceData.room_id})`);
     } catch (wsError) {
@@ -180,27 +166,23 @@ export async function acceptGameInvitation(invitationId: number, userId: number,
 }
 
 export async function rejectGameInvitation(invitationId: number, userId: number) {
-    // 1. Get the invitation
+
     const invitation = gameInvitationRepo.getInvitationById(invitationId);
     
     if (!invitation) {
         throw new Error("Invitation not found");
     }
 
-    // 2. Validate that the user is the recipient
     if (invitation.to_user_id !== userId) {
         throw new Error("You are not the recipient of this invitation");
     }
 
-    // 3. Validate that invitation is still pending
     if (invitation.status !== 'pending') {
         throw new Error(`Invitation is ${invitation.status}`);
     }
 
-    // 4. Update invitation status to rejected
     gameInvitationRepo.updateInvitationStatus(invitationId, 'rejected');
 
-    // 5. Notify the sender via WebSocket
     try {
         const rejectionData = {
             invitation_id: invitationId,

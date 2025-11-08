@@ -4,7 +4,7 @@ import { getAccessToken } from '../state/authState';
 const apiHost = window.location.hostname;
 
 export interface ChatMessage {
-    type: 'message' | 'user_connected' | 'user_disconnected' | 'typing' | 'stop_typing' | 'game_invitation' | 'connected_users_list';
+    type: 'message' | 'user_connected' | 'user_disconnected' | 'typing' | 'stop_typing' | 'game_invitation' | 'connected_users_list' | 'user_deleted';
     userId: number;
     conversationId?: number;
     content?: string;
@@ -34,8 +34,7 @@ export class WebSocketClient {
                 return;
             }
 
-            // Clear any existing message handlers to prevent duplicates
-            this.messageHandlers = [];
+            // Do NOT clear handlers here; keep them across reconnects so listeners persist
 
             this.userId = userId;
             
@@ -58,7 +57,7 @@ export class WebSocketClient {
             this.ws.onmessage = (event) => {
                 try {
                     const message: ChatMessage = JSON.parse(event.data);
-                    
+
                     // Notify all message handlers
                     this.messageHandlers.forEach(handler => handler(message));
                 } catch (error) {

@@ -1,6 +1,6 @@
 import { UI_MESSAGES, CHAT_CONFIG } from "./chatConstants";
 import { initializeWebSocket } from "./chatWebSocket";
-import { handleMessageFormSubmit, updateMessageInputVisibility } from "./chatMessages";
+import { handleMessageFormSubmit, updateMessageInputVisibility, setupTypingIndicator } from "./chatMessages";
 import { loadConversationsAuto } from "./chatConversations";
 import { loadAllUsers, getUserProfile } from "./chatUtils";
 import { handleUserSearch } from "./chatUserSearch";
@@ -15,6 +15,7 @@ import { sendGameInvitation } from "../../services/api";
 import { openNewChatModal, closeProfileModal } from "./chatModal";
 import { getAccessToken } from "../../state/authState";
 import { loadNotificationsAuto, getNotifications } from "./chatNotifications";
+import { acceptFriendInvitation, sendFriendInvitation, checkAlreadyFriend, rejectFriendInvitation } from "./chatInvitations";
 
 export async function chatHandlers() {
     // Get essential DOM elements with proper error handling
@@ -37,9 +38,13 @@ export async function chatHandlers() {
     const blockButton = document.getElementById('block-user-btn') as HTMLButtonElement;
     const inviteGameButton = document.getElementById('invite-game-btn') as HTMLButtonElement;
     const viewProfileButton = document.getElementById('view-profile-btn') as HTMLButtonElement;
+    const addFriendButton = document.getElementById('invite-friend-btn') as HTMLButtonElement;
 
     // Initialize WebSocket connection
-    initializeWebSocket();
+    await initializeWebSocket();
+
+    // Setup typing indicator on message input
+    setupTypingIndicator();
 
     // Load blocked users from backend first, then load conversations
     fetchBlockedUsers()
@@ -165,6 +170,32 @@ export async function chatHandlers() {
     });
     }
 
+    if (addFriendButton) {
+        addFriendButton.addEventListener('click', async () => {
+        if (!getActiveConversationId()) {
+            alert('No conversation selected');
+            return;
+        }
+
+        try {
+            const activeConversationId = getActiveConversationId();
+            if (activeConversationId) {
+                
+                const check = await checkAlreadyFriend();
+
+                if (check) {
+                    console.log("Entra en check");
+                    return ;
+                }
+
+                await sendFriendInvitation();
+            }
+        } catch (error) {
+            alert('Failed to load user profile');
+        }
+    });
+    }
+
     // Profile modal event listeners
     const closeModalBtn = document.getElementById('close-profile-modal');
     const profileModal = document.getElementById('profile-modal');
@@ -238,6 +269,57 @@ export async function chatHandlers() {
         });
     }
 
+    messagesContainer.addEventListener('click', async (e) => {
+        const target = e.target as HTMLElement;
+        if (!target)
+            return;
+
+        const messageBubble = target.closest('.message-bubble');
+        if (!messageBubble) 
+            return;
+
+        if (target.classList.contains('accept-friend-btn')) {
+            const userId = getActiveConversationId();
+            console.log(`Accept friend clicked for user ${userId}`);
+
+            const accepted = await acceptFriendInvitation();
+            console.log("Accepted:", accepted);
+            if (accepted.success === false)
+                return ;
+
+            const buttons = messageBubble.querySelectorAll('.accept-friend-btn, .reject-friend-btn');
+            buttons.forEach(btn => btn.remove());
+
+            const content = messageBubble.querySelector('.message-content');
+            if (content) 
+                content.insertAdjacentHTML('beforeend', "<div class='friend-action-result'>✅ Friend accepted</div>");
+            addFriendButton.style.display = "none";
+            return;
+        }
+
+        if (target.classList.contains('reject-friend-btn')) {
+            const userId = getActiveConversationId();
+            console.log(`Reject friend clicked for user ${userId}`);
+
+            const rejected = await rejectFriendInvitation();
+            if (rejected.success === "false")
+                return ;
+
+            const buttons = messageBubble.querySelectorAll('.accept-friend-btn, .reject-friend-btn');
+            buttons.forEach(btn => btn.remove());
+
+            const content = messageBubble.querySelector('.message-content');
+            if (content) {
+                content.insertAdjacentHTML('beforeend', "<div class='friend-action-result'>❌ Friend request rejected</div>");
+
+            }
+                const el = document.querySelector(".message-bubble.friend-invitation-received.pong-invite");
+                if (el) {
+                el.className = "message-bubble friend-invitation-received-rejected";
+                }   
+                return;
+        }
+    });
     // Update visibility on page load
     updateMessageInputVisibility();
 }

@@ -13,6 +13,7 @@ import {
 } from "./chatState";
 import { getMessages, displayMessages, updateMessageInputVisibility } from "./chatMessages";
 import { updateBlockButtonUI } from "./chatBlockUsers";
+import { checkAlreadyFriend } from "./chatInvitations";
 
 const apiHost = `${window.location.hostname}`;
 
@@ -77,12 +78,23 @@ export async function selectConversation(otherUserId: number, otherUserName: str
     const blockButton = document.getElementById('block-user-btn') as HTMLButtonElement;
     const viewProfileButton = document.getElementById('view-profile-btn') as HTMLButtonElement;
     const profileBtn = document.getElementById('view-profile-btn') as HTMLButtonElement;
+    const friendBtn = document.getElementById('invite-friend-btn') as HTMLButtonElement;
+
     if (profileBtn) {
         profileBtn.style.display = 'block';
     }
 
     if (blockButton) {
         blockButton.style.display = 'block';
+    }
+
+    if (friendBtn) {
+        const isFriend = await checkAlreadyFriend();
+        if (isFriend) {
+            friendBtn.style.display = 'none';
+        } else {
+            friendBtn.style.display = 'flex';
+        }
     }
 
     // Update block button state based on current blocked users
@@ -166,12 +178,13 @@ export async function loadConversationsAuto() {
 
                     item.addEventListener('click', async (e) => {
                         const target = e.target as HTMLElement;
-                        const username = target.getAttribute('data-username') || await getUsername(userId);
-
+                        
                         if (target.classList.contains('conversation-name')) {
-                            // Navigate to profile
+                            // Navigate to profile of the other user (the conversation partner)
+                            const username = await getUsername(userId);
                             window.location.hash = `#/profile/${username}`;
                         } else {
+                            const username = await getUsername(userId);
                             // Select conversation
                             document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
                             item.classList.add('active');

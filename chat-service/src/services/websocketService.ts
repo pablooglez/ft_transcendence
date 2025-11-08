@@ -102,6 +102,12 @@ export function sendToConversation(userId1: number, userId2: number, message: We
     sendToUser(userId2, message);
 }
 
+// Utility to check if a user is currently connected via WebSocket
+export function isUserConnected(userId: number): boolean {
+    const connection = connectedUsers.get(userId);
+    return !!(connection && connection.websocket && connection.websocket.readyState === WebSocketState.OPEN);
+}
+
 export function broadcastToAll(message: WebSocketMessage, excludeUserId?: number): void {
     connectedUsers.forEach((connection, userId) => {
         if (excludeUserId && userId === excludeUserId) {
@@ -358,6 +364,24 @@ export function notifyGameInvitationRejected(fromUserId: number, rejectionData: 
     }
 }
 
+export function notifyUserDeleted(affectedUserId: number, deletedUserId: number): void {
+    const message: WebSocketMessage = {
+        type: 'user_deleted' as any,
+        userId: deletedUserId,
+        data: {
+            deletedUserId,
+            event_type: 'user_deleted'
+        }
+    };
+    
+    const sent = sendToUser(affectedUserId, message);
+    if (sent) {
+        console.log(`Notified user ${affectedUserId} about deletion of user ${deletedUserId}`);
+    } else {
+        console.log(`User ${affectedUserId} not connected - will see updated conversations on reconnect`);
+    }
+}
+
 // Cleanup function for periodic maintenance
 export function cleanupStaleConnections(): void {
     const now = Date.now();
@@ -374,3 +398,55 @@ export function cleanupStaleConnections(): void {
 
 // Auto-cleanup every 5 minutes
 setInterval(cleanupStaleConnections, 5 * 60 * 1000);
+
+
+export function notifyFriendInvitation(otherUserId: number, invitationData: any): void {
+    const message: WebSocketMessage = {
+        type: 'message' as any, // Align with frontend handler expecting 'message'
+        userId: invitationData.user_id,
+        // Provide content so the frontend renders a visible bubble if it doesn't branch on data.event_type
+        content: 'Do you wanna be my friend? :)',
+        data: {
+            ...invitationData,
+            // Use the same event_type the UI already checks in addMessageToUI/displayMessages
+            event_type: 'friend_invitation_message'
+        }
+    };
+    
+    const sent = sendToUser(otherUserId, message);
+    if (!sent) {
+        console.log(`User ${otherUserId} not connected - invitation will be available when they connect`);
+    }
+}
+
+export function notifyFriendInvitationAccepted(userId: number, acceptanceData: any): void {
+    const message: WebSocketMessage = {
+        type: 'message' as any,
+        userId: acceptanceData.other_user_id,
+        data: {
+            ...acceptanceData,
+            event_type: 'friend_invitation_accepted'
+        }
+    };
+    
+    const sent = sendToUser(userId, message);
+    if (!sent) {
+        console.log(`User ${userId} not connected - acceptance notification lost`);
+    }
+}
+
+export function notifyFriendInvitationRejected(userId: number, rejectionData: any): void {
+    const message: WebSocketMessage = {
+        type: 'message' as any,
+        userId: rejectionData.other_user_id,
+        data: {
+            ...rejectionData,
+            event_type: 'friend_invitation_rejected'
+        }
+    };
+    
+    const sent = sendToUser(userId, message);
+    if (!sent) {
+        console.log(`User ${userId} not connected - rejection notification lost`);
+    }
+}

@@ -1,5 +1,6 @@
 import { TournamentRepository } from "../repositories/tournamentRepository";
 import { PlayerRepository } from "../repositories/playerRepository";
+import { sendNotification } from "./notificationService";
 
 function shuffleArray<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
@@ -100,18 +101,22 @@ export async function startRemoteTournament(tournamentId: number) {
     const player1 = players[i];
     const player2 = players[i + 1];
 
-    const matchId = TournamentRepository.addRemoteMatch(tournamentId, 1, player1.id, player2.id, null);
+    const matchId = TournamentRepository.addRemoteMatch(tournamentId, 1, player1.user_id, player2.user_id, null);
 
     matches.push({
       id: matchId,
-      player1_id: player1.id,
-      player2_id: player2.id,
+      player1_id: player1.user_id,
+      player2_id: player2.user_id,
       round: 1,
       status: "pending",
     });
+
+    await sendNotification(Number(player1.user_id), "You have a new match!", `You have a new match for the tournament ${tournament.name}! Good luck!!`);
+    await sendNotification(Number(player2.user_id), "You have a new match!", `You have a new match for the tournament ${tournament.name}! Good luck!!`);
   }
 
   TournamentRepository.updateStatus(tournamentId, "in_progress");
+
 
   return {
     tournament: {
@@ -177,6 +182,8 @@ export async function advanceRemoteTournamentRound(tournamentId: number, winners
     TournamentRepository.updateStatus(tournamentId, "completed");
     TournamentRepository.setWinner && (await (TournamentRepository as any).setWinner(tournamentId, winners[0].id));
 
+    await sendNotification(winners[0].id, "Congratulations, you are the winner!", `You have win the tournament ${tournament.name}!!!`);
+
     return {
       tournament: { ...tournament, status: "completed", winner_id: winners[0].id },
       matches: [],
@@ -201,9 +208,12 @@ export async function advanceRemoteTournamentRound(tournamentId: number, winners
       round: nextRound,
       status: "pending",
     });
+    await sendNotification(Number(player1.id), "You have a new match!", `You have a new match for the tournament ${tournament.name}! Good luck!!`);
+    await sendNotification(Number(player2.id), "You have a new match!", `You have a new match for the tournament ${tournament.name}! Good luck!!`);
   }
 
   TournamentRepository.updateRound(tournamentId, nextRound);
+
 
   return {
     tournament: { ...tournament, current_round: nextRound },

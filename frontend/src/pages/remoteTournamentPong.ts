@@ -73,8 +73,8 @@ export function remoteTournamentPongPage(): string {
           <p>Left Player</p>
         </div>
 
-    <canvas id="pongCanvas" width="800" height="600"></canvas>
-    <div id="countdown" class="countdown hidden"></div>
+        <canvas id="pongCanvas" width="800" height="600"></canvas>
+        <div id="countdown" class="countdown hidden"></div>
 
         <div class="controls right-controls">
           <p>Right Player</p>
@@ -216,7 +216,14 @@ function startGame(roomIdToJoin: string) {
     document.getElementById("roleInfo")!.textContent = `Joining tournament room ${roomIdToJoin}...`;
     
     socket.on('connect', () => {
-        socket.emit("joinRoom", { roomId: roomIdToJoin });
+        const userId = getUserIdFromToken() || (() => {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) return undefined;
+            try { const u = JSON.parse(userStr); return u?.id ?? u?.userId; } catch { return undefined; }
+        })();
+        const payload: any = { roomId: roomIdToJoin };
+        if (typeof userId !== 'undefined' && userId !== null) payload.userId = userId;
+        socket.emit("joinRoom", payload);
     });
 
     socket.on("roomJoined", (data: { roomId: string, role: "left" | "right" }) => {
