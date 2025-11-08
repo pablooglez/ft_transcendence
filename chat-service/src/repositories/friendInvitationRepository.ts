@@ -30,3 +30,8 @@ export function updateInvitationStatus(id: number, status: string) {
     const stmt = db.prepare("UPDATE invitations SET status = ? WHERE id = ?");
     stmt.run(status, id);
 }
+
+export function deleteFriendInvitationsByUser(user_id: number) {
+    const stmt = db.prepare("DELETE FROM invitations WHERE user_id = ? OR other_user_id = ?");
+    return stmt.run(user_id, user_id);
+}

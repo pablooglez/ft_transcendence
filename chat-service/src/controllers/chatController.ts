@@ -4,6 +4,7 @@ import { extractUserId } from "../utils/auth";
 import * as conversationRepo from "../repositories/conversationRepository";
 import * as blockRepo from "../repositories/blockRepository";
 import * as websocketService from "../services/websocketService";
+import { deleteFriendInvitationsByUser } from "../repositories/friendInvitationRepository";
 
 export async function sendMessageController(req: FastifyRequest, reply: FastifyReply) {
     const { recipientId, content, messageType } = req.body as { 
@@ -60,6 +61,7 @@ export async function deleteUserDataController(req: FastifyRequest, reply: Fasti
         // Delete all conversations, messages (CASCADE), and blocks for the user
         const conversationsDeleted = conversationRepo.deleteUserConversations(deletedUserId);
         const blocksDeleted = blockRepo.deleteUserBlocks(deletedUserId);
+        deleteFriendInvitationsByUser(deletedUserId);
         
         // Notify all affected users via WebSocket to refresh their conversations
         affectedUserIds.forEach(affectedUserId => {
