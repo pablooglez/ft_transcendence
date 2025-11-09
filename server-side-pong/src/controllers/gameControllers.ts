@@ -175,7 +175,7 @@ export async function gameController(fastify: FastifyInstance, io: Server)
 
 		// Apply difficulty multipliers when provided. Difficulty values: easy, medium, hard
 		if (typeof difficulty === 'string') {
-			const muls: Record<string, number> = { easy: 0.9, medium: 1, hard: 1.25 };
+			const muls: Record<string, number> = { easy: 0.75, medium: 1, hard: 1.5 };
 			const mul = muls[difficulty] ?? 1;
 			// Only set values if they weren't explicitly provided above
 			// Only change paddle speed for difficulty; leave ball speeds untouched unless explicitly provided
