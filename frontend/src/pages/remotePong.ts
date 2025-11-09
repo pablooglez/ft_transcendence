@@ -257,10 +257,16 @@ async function postApiJson(path: string, data: any): Promise<Response> {
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
-    if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
-    // Disable 'P' pause in remote pong view
-    if (e.key.toLowerCase() === "p") return;
-    keysPressed.add(e.key);
+    try {
+        if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
+        // Disable 'P' pause in remote pong view
+        if (e.key.toLowerCase() === "p")
+            return;
+
+        keysPressed.add(e.key);
+    } catch (err: any) {
+
+    }
 };
 
 const handleKeyUp = (e: KeyboardEvent) => keysPressed.delete(e.key);

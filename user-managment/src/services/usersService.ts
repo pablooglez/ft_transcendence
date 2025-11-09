@@ -89,13 +89,16 @@ export async function getUserAvatar(id: number): Promise<string> {
 }
 
 export async function avatarUploader(id: number, file: Express.Multer.File): Promise<{ message: string }> {
+	try {
+		const extension = path.extname(file.filename).toLowerCase();
+		const buffer = await file.toBuffer();
 	
-	const extension = path.extname(file.filename).toLowerCase();
-	const buffer = await file.toBuffer();
+		const uploadPath = path.join("./avatars", `${id}${extension}`);
+		console.log("Uploading avatar to:", uploadPath);
+		await fs.promises.writeFile(uploadPath, buffer);
+	} catch (err: any) {
 
-	const uploadPath = path.join("./avatars", `${id}${extension}`);
-	console.log("Uploading avatar to:", uploadPath);
-	await fs.promises.writeFile(uploadPath, buffer);
+	}
 	return { message: "Avatar uploaded successfully" };
 }
 

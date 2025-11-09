@@ -391,15 +391,19 @@ async function postGame(path: string): Promise<Response> {
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
-    if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
-
-    if (e.key.toLowerCase() === "p")
-    {
-        togglePause();
-        return;
+    try {
+        if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) e.preventDefault();
+    
+        if (e.key.toLowerCase() === "p")
+        {
+            togglePause();
+            return;
+        }
+    
+        keysPressed.add(e.key);
+    } catch (err: any) {
+        
     }
-
-    keysPressed.add(e.key);
 };
 
 function togglePause() {

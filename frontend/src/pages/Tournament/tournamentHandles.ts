@@ -320,213 +320,216 @@ export async function tournamentHandlers() {
     const leaveBtn = document.getElementById("leave-btn");
     const startBtn = document.getElementById("start-btn");
 
-
-    cards.forEach(card => {
-        card.addEventListener("click", async () => {
-            currentTournamentId = Number(card.getAttribute("data-tournament-id"));
-            const html = await getTournamentLobbyHTML(currentTournamentId)
-            setTournamentContent(html);
-            startFastPolling(currentTournamentId); // Start with fast polling
+    try {
+        cards.forEach(card => {
+            card.addEventListener("click", async () => {
+                currentTournamentId = Number(card.getAttribute("data-tournament-id"));
+                const html = await getTournamentLobbyHTML(currentTournamentId)
+                setTournamentContent(html);
+                startFastPolling(currentTournamentId); // Start with fast polling
+            });
         });
-    });
-    
-    startBtn?.addEventListener("click", async () => {
-        const token = getAccessToken();
-        const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/start-remote`, {
-            method: "POST",
-            headers: {                 
-                "Authorization": `Bearer ${token}`, },
-            credentials: "include", // include cookies
-        });
+        
+        startBtn?.addEventListener("click", async () => {
+            const token = getAccessToken();
+            const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/start-remote`, {
+                method: "POST",
+                headers: {                 
+                    "Authorization": `Bearer ${token}`, },
+                credentials: "include", // include cookies
+            });
 
-        const tournamentData = await tournament.json();
-        console.log(tournamentData);
-        if (tournament.ok) {
-            // Show matches lobby with room creation for the creator
-            showTournamentMatchesLobby(tournamentData);
-        }
-    })
-
-    joinBtn?.addEventListener("click", async () => {
-        const token = getAccessToken();
-        const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/join`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-            },
-            credentials: "include",
-        });
-        const data = await response.json();
-    })
-    
-    leaveBtn?.addEventListener("click", async () => {
-        const token = getAccessToken();
-        const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/leave`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-            },
-            credentials: "include",
-        });
-        const data = await response.json();
-        if (data.success) {
-            await loadTournamentPlayers(currentTournamentId);
-        }
-    });
-
-    backButton?.addEventListener("click", () => {
-    isOnline = 0;
-    stopPolling(); // Stop polling when going back
-    const tournamentContainer = document.getElementById("tournament-container");
-    if (!tournamentContainer || tournamentHistory.length === 0) return;
-    // Restore the last state
-    const previousHTML = tournamentHistory.pop();
-    if (previousHTML) {
-        tournamentContainer.innerHTML = previousHTML;
-        tournamentHandlers();
-    }
-    });
-
-
-    localButton?.addEventListener("click", () => {
-        setTournamentContent(getTournamentPlayersHtml());
-        tournamentHandlers();
-    })
-
-    onlineButton?.addEventListener("click", () => {
-        if (!isLoggedIn()) {
-            window.location.hash = "#/login";
-            return ;
-        }
-        setTournamentContent(getTournamentRemoteModeHtml());
-        isOnline = 1;
-        tournamentHandlers();
-    })
-
-    joinTournamentsButton?.addEventListener("click", async () => {
-        const tournamentList = await getRemoteTournaments();
-        setTournamentContent(getTournamentListHtml(tournamentList));
-        const tournamentTitle = document.getElementById("tournamentTitle");
-        if (tournamentTitle)
-            tournamentTitle.style.marginBottom = "30px";
-    })
-
-    createOnlineTournamentButton?.addEventListener("click", () => {
-        setTournamentContent(getTournamentPlayersHtml());
-    })
-
-    fourPlayerBtn?.addEventListener("click", async () => {
-        if (!isOnline)
-        {
-            tournamentPlayers = 4;
-            const name = (document.querySelector<HTMLInputElement>("#tournamentName"));
-            if (name?.value) {
-                if (name.value.length > 30) {
-                    alert("Tournament name cannot exceed 30 characters");
-                    return;
-                }
-                tournamentName = name.value;
+            const tournamentData = await tournament.json();
+            console.log(tournamentData);
+            if (tournament.ok) {
+                // Show matches lobby with room creation for the creator
+                showTournamentMatchesLobby(tournamentData);
             }
-            setTournamentContent(getTournamentAliasFourHtml());
-        }
-        else {
-            tournamentPlayers = 4;
-            const name = (document.querySelector<HTMLInputElement>("#tournamentName"));
-            if (name?.value) {
-                if (name.value.length > 30) {
-                    alert("Tournament name cannot exceed 30 characters");
-                    return;
-                }
-                tournamentName = name.value;
-            }
-            currentTournamentId = await createRemoteTournament(tournamentName, tournamentPlayers);
-            const html = await getTournamentLobbyHTML(currentTournamentId)
-            setTournamentContent(html);
-            startFastPolling(currentTournamentId); // Start with fast polling to detect when tournament starts
-        }
-    })
-
-    if (fourPlayerForm) {
-        fourPlayerForm.onsubmit = async (e) => {
-            e.preventDefault();
-
-        const playerOne = (document.querySelector<HTMLInputElement>("#player-one")!).value;
-        const playerTwo = (document.querySelector<HTMLInputElement>("#player-two")!).value;
-        const playerThree = (document.querySelector<HTMLInputElement>("#player-three")!).value;
-        const playerFour = (document.querySelector<HTMLInputElement>("#player-four")!).value;
-
-        // Validate alias lengths
-        const aliases = [playerOne, playerTwo, playerThree, playerFour];
-        for (let i = 0; i < aliases.length; i++) {
-            if (aliases[i].length > 10) {
-                alert(`Player ${i + 1} alias cannot exceed 10 characters`);
-                return;
-            }
-            if (aliases[i].trim() === "") {
-                alert(`Player ${i + 1} alias cannot be empty`);
-                return;
-            }
-        }
-
-        // Check for duplicate aliases
-        const aliasSet = new Set<string>();
-        const playerNames = ['Player one', 'Player two', 'Player three', 'Player four'];
-        for (let i = 0; i < aliases.length; i++) {
-            const normalizedAlias = aliases[i].toLowerCase().trim();
-            if (aliasSet.has(normalizedAlias)) {
-                alert(`Duplicate alias detected: "${aliases[i]}". Each player must have a unique alias.`);
-                return;
-            }
-            aliasSet.add(normalizedAlias);
-        }
-
-        const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/local`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tournamentName, tournamentPlayers, playerOne, playerTwo, playerThree, playerFour }),
-            credentials: "include", // include cookies
-        });
-
-        const tournamentData = await tournament.json();
-        console.log(tournamentData);
-        if (tournament.ok && tournamentData.shuffledPlayers)
-        {
-            const players = tournamentData.shuffledPlayers;
-            onTournamentCreated(tournamentData);
-            setTournamentContent(getTournamentCanvasFourHtml(players[0], players[1], players[2], players[3]));
-        }
-        tournamentHandlers();
-    }
-}
-
-    startLocalTournamentBtn?.addEventListener("click", async () => {
-        if (!currentTournament)
-            return alert("No active tournament");
-
-        const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournament.id}/start`, {
-            method: "POST",
         })
-        const tournamentData = await response.json();
-        console.log(tournamentData);
-        const currentHTML = tournamentContainer?.innerHTML ?? "";
-       //if (tournamentContainer)
-        //    tournamentContainer.innerHTML = localTournamentPongPage();
-        startLocalTournamentFlow(tournamentData);
-        tournamentHandlers();
-        //renderMatch(matches[0]);
-    });
 
-    const leftPlayerButton = document.getElementById("leftPlayer");
+        joinBtn?.addEventListener("click", async () => {
+            const token = getAccessToken();
+            const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/join`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                },
+                credentials: "include",
+            });
+            const data = await response.json();
+        })
+        
+        leaveBtn?.addEventListener("click", async () => {
+            const token = getAccessToken();
+            const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/leave`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                },
+                credentials: "include",
+            });
+            const data = await response.json();
+            if (data.success) {
+                await loadTournamentPlayers(currentTournamentId);
+            }
+        });
 
-    leftPlayerButton?.addEventListener("click", () => {
-        leftPlayerLoses("semifinal");
-        tournamentHandlers();
-    })
+        backButton?.addEventListener("click", () => {
+        isOnline = 0;
+        stopPolling(); // Stop polling when going back
+        const tournamentContainer = document.getElementById("tournament-container");
+        if (!tournamentContainer || tournamentHistory.length === 0) return;
+        // Restore the last state
+        const previousHTML = tournamentHistory.pop();
+        if (previousHTML) {
+            tournamentContainer.innerHTML = previousHTML;
+            tournamentHandlers();
+        }
+        });
 
-    const rightPlayerButton = document.getElementById("rightPlayer");
 
-    rightPlayerButton?.addEventListener("click", () => {
-        rightPlayerLoses("semifinal");
-        tournamentHandlers();
-    })
+        localButton?.addEventListener("click", () => {
+            setTournamentContent(getTournamentPlayersHtml());
+            tournamentHandlers();
+        })
+
+        onlineButton?.addEventListener("click", () => {
+            if (!isLoggedIn()) {
+                window.location.hash = "#/login";
+                return ;
+            }
+            setTournamentContent(getTournamentRemoteModeHtml());
+            isOnline = 1;
+            tournamentHandlers();
+        })
+
+        joinTournamentsButton?.addEventListener("click", async () => {
+            const tournamentList = await getRemoteTournaments();
+            setTournamentContent(getTournamentListHtml(tournamentList));
+            const tournamentTitle = document.getElementById("tournamentTitle");
+            if (tournamentTitle)
+                tournamentTitle.style.marginBottom = "30px";
+        })
+
+        createOnlineTournamentButton?.addEventListener("click", () => {
+            setTournamentContent(getTournamentPlayersHtml());
+        })
+
+        fourPlayerBtn?.addEventListener("click", async () => {
+            if (!isOnline)
+            {
+                tournamentPlayers = 4;
+                const name = (document.querySelector<HTMLInputElement>("#tournamentName"));
+                if (name?.value) {
+                    if (name.value.length > 30) {
+                        alert("Tournament name cannot exceed 30 characters");
+                        return;
+                    }
+                    tournamentName = name.value;
+                }
+                setTournamentContent(getTournamentAliasFourHtml());
+            }
+            else {
+                tournamentPlayers = 4;
+                const name = (document.querySelector<HTMLInputElement>("#tournamentName"));
+                if (name?.value) {
+                    if (name.value.length > 30) {
+                        alert("Tournament name cannot exceed 30 characters");
+                        return;
+                    }
+                    tournamentName = name.value;
+                }
+                currentTournamentId = await createRemoteTournament(tournamentName, tournamentPlayers);
+                const html = await getTournamentLobbyHTML(currentTournamentId)
+                setTournamentContent(html);
+                startFastPolling(currentTournamentId); // Start with fast polling to detect when tournament starts
+            }
+        })
+
+        if (fourPlayerForm) {
+            fourPlayerForm.onsubmit = async (e) => {
+                e.preventDefault();
+
+            const playerOne = (document.querySelector<HTMLInputElement>("#player-one")!).value;
+            const playerTwo = (document.querySelector<HTMLInputElement>("#player-two")!).value;
+            const playerThree = (document.querySelector<HTMLInputElement>("#player-three")!).value;
+            const playerFour = (document.querySelector<HTMLInputElement>("#player-four")!).value;
+
+            // Validate alias lengths
+            const aliases = [playerOne, playerTwo, playerThree, playerFour];
+            for (let i = 0; i < aliases.length; i++) {
+                if (aliases[i].length > 10) {
+                    alert(`Player ${i + 1} alias cannot exceed 10 characters`);
+                    return;
+                }
+                if (aliases[i].trim() === "") {
+                    alert(`Player ${i + 1} alias cannot be empty`);
+                    return;
+                }
+            }
+
+            // Check for duplicate aliases
+            const aliasSet = new Set<string>();
+            const playerNames = ['Player one', 'Player two', 'Player three', 'Player four'];
+            for (let i = 0; i < aliases.length; i++) {
+                const normalizedAlias = aliases[i].toLowerCase().trim();
+                if (aliasSet.has(normalizedAlias)) {
+                    alert(`Duplicate alias detected: "${aliases[i]}". Each player must have a unique alias.`);
+                    return;
+                }
+                aliasSet.add(normalizedAlias);
+            }
+
+            const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/local`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tournamentName, tournamentPlayers, playerOne, playerTwo, playerThree, playerFour }),
+                credentials: "include", // include cookies
+            });
+
+            const tournamentData = await tournament.json();
+            console.log(tournamentData);
+            if (tournament.ok && tournamentData.shuffledPlayers)
+            {
+                const players = tournamentData.shuffledPlayers;
+                onTournamentCreated(tournamentData);
+                setTournamentContent(getTournamentCanvasFourHtml(players[0], players[1], players[2], players[3]));
+            }
+            tournamentHandlers();
+        }
+    }
+
+        startLocalTournamentBtn?.addEventListener("click", async () => {
+            if (!currentTournament)
+                return alert("No active tournament");
+
+            const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournament.id}/start`, {
+                method: "POST",
+            })
+            const tournamentData = await response.json();
+            console.log(tournamentData);
+            const currentHTML = tournamentContainer?.innerHTML ?? "";
+        //if (tournamentContainer)
+            //    tournamentContainer.innerHTML = localTournamentPongPage();
+            startLocalTournamentFlow(tournamentData);
+            tournamentHandlers();
+            //renderMatch(matches[0]);
+        });
+
+        const leftPlayerButton = document.getElementById("leftPlayer");
+
+        leftPlayerButton?.addEventListener("click", () => {
+            leftPlayerLoses("semifinal");
+            tournamentHandlers();
+        })
+
+        const rightPlayerButton = document.getElementById("rightPlayer");
+
+        rightPlayerButton?.addEventListener("click", () => {
+            rightPlayerLoses("semifinal");
+            tournamentHandlers();
+        })
+    } catch (err: any) {
+
+    }
 }
