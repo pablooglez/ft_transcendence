@@ -55,7 +55,9 @@ Jeandrad and Pablogon are from this piscine. Like the October piscine, they star
       </div>
       </div>
         <h1 class="home-page-title">...we have finally reached...</h1>
-
+        <div class="section">
+        <div class="last-image-home"><h1 class="last-title-home">The End?</h1></div>
+        </div>
     </div>
   `;
 }

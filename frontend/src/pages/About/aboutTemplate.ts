@@ -15,7 +15,7 @@ export function getAboutHTML(): string {
             <div class="team-member">
                 <div class="our-team">
                     <div class="picture">
-                        <img src="../../public/saroca_intra.jpg" alt="saroca_intra">
+                        <img src="saroca_intra.jpg" alt="saroca_intra">
                         </div>
                         <div class="team-content">
                         <h3 class="name">Sergio Aroca</h3>
@@ -32,7 +32,7 @@ export function getAboutHTML(): string {
             <div class="team-member">
                 <div class="our-team">
                     <div class="picture">
-                        <img src="../../public/jeandrad_intra.jpg" alt="saroca_intra">
+                        <img src="jeandrad_intra.jpg" alt="jeandrad_intra">
                     </div>
                     <div class="team-content">
                         <h3 class="name">Jesús Andrade</h3>
@@ -49,7 +49,7 @@ export function getAboutHTML(): string {
             <div class="team-member">
                 <div class="our-team">
                     <div class="picture">
-                        <img src="../../public/pablogon_intra.jpg" alt="saroca_intra">
+                        <img src="pablogon_intra.jpg" alt="pablogon_intra">
                     </div>
                     <div class="team-content">
                         <h3 class="name">Pablo González</h3>
@@ -66,7 +66,7 @@ export function getAboutHTML(): string {
             <div class="team-member">
                 <div class="our-team">
                     <div class="picture">
-                        <img src="../../public/schamizo_intra.jpg" alt="saroca_intra">
+                        <img src="schamizo_intra.jpg" alt="schamizo_intra">
                     </div>
                     <div class="team-content">
                         <h3 class="name">Salvador Chamizo</h3>
@@ -436,7 +436,7 @@ export function getAboutUsHTML() {
             <div class="team-member">
                 <div class="our-team">
                     <div class="picture">
-                        <img src="../../public/saroca_intra.jpg" alt="saroca_intra">
+                        <img src="saroca_intra.jpg" alt="saroca_intra">
                         </div>
                         <div class="team-content">
                         <h3 class="name">Sergio Aroca</h3>
@@ -453,7 +453,7 @@ export function getAboutUsHTML() {
             <div class="team-member">
                 <div class="our-team">
                     <div class="picture">
-                        <img src="../../public/jeandrad_intra.jpg" alt="jeandrad_intra">
+                        <img src="jeandrad_intra.jpg" alt="jeandrad_intra">
                     </div>
                     <div class="team-content">
                         <h3 class="name">Jesús Andrade</h3>
@@ -470,7 +470,7 @@ export function getAboutUsHTML() {
             <div class="team-member">
                 <div class="our-team">
                     <div class="picture">
-                        <img src="../../public/pablogon_intra.jpg" alt="pablogon_intra">
+                        <img src="pablogon_intra.jpg" alt="pablogon_intra">
                     </div>
                     <div class="team-content">
                         <h3 class="name">Pablo González</h3>
@@ -487,7 +487,7 @@ export function getAboutUsHTML() {
             <div class="team-member">
                 <div class="our-team">
                     <div class="picture">
-                        <img src="../../public/schamizo_intra.jpg" alt="schamizo_intra">
+                        <img src="schamizo_intra.jpg" alt="schamizo_intra">
                     </div>
                     <div class="team-content">
                         <h3 class="name">Salvador Chamizo</h3>

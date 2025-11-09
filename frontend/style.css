@@ -500,6 +500,23 @@ header {
   height: 350px;
 }
 
+.last-image-home {
+  background-image: url("sergio_foto.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 800px;
+  height: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.last-title-home {
+  color: white;
+  font-size: 42px;
+}
+
 .cards-image {
   background-image: url("student_cards.jpg");
   background-size: cover;
@@ -4158,7 +4175,7 @@ header {
 }
 
 .saroca-image {
-    background-image: url("../../public/saroca_intra.jpg");
+    background-image: url("saroca_intra.jpg");
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -4167,7 +4184,7 @@ header {
 }
 
 .schamizo-image {
-  background-image: url("../../public/schamizo_intra.jpg");
+  background-image: url("schamizo_intra.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
@@ -4176,7 +4193,7 @@ header {
 }
 
 .jeandrad-image {
-    background-image: url("../../public/jeandrad_intra.jpg");
+    background-image: url("jeandrad_intra.jpg");
     background-size: cover;
     background-repeat: no-repeat;
   background-position: center;
@@ -4185,7 +4202,7 @@ header {
 }
 
 .pablogon-image {
-    background-image: url("../../public/pablogon_intra.jpg");
+    background-image: url("pablogon_intra.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
