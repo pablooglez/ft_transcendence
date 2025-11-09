@@ -48,6 +48,16 @@ export async function createLocalTournamentController(req: FastifyRequest, reply
             }
         }
 
+        // Check for duplicate aliases (case-insensitive)
+        const aliasSet = new Set<string>();
+        for (const playerAlias of players) {
+            const normalizedAlias = playerAlias.toLowerCase().trim();
+            if (aliasSet.has(normalizedAlias)) {
+                return reply.code(400).send({ error: `Duplicate alias detected: "${playerAlias}". Each player must have a unique alias.` });
+            }
+            aliasSet.add(normalizedAlias);
+        }
+
         const newTournament = await TournamentService.createLocalTournament({
             name: tournamentName,
             maxPlayers: tournamentPlayers,

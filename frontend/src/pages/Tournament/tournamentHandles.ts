@@ -468,6 +468,18 @@ export async function tournamentHandlers() {
             }
         }
 
+        // Check for duplicate aliases
+        const aliasSet = new Set<string>();
+        const playerNames = ['Player one', 'Player two', 'Player three', 'Player four'];
+        for (let i = 0; i < aliases.length; i++) {
+            const normalizedAlias = aliases[i].toLowerCase().trim();
+            if (aliasSet.has(normalizedAlias)) {
+                alert(`Duplicate alias detected: "${aliases[i]}". Each player must have a unique alias.`);
+                return;
+            }
+            aliasSet.add(normalizedAlias);
+        }
+
         const tournament = await fetch(`http://${apiHost}:8080/tournaments/local`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
