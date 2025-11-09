@@ -62,6 +62,16 @@ export async function roomRoutes(fastify: FastifyInstance) {
     reply.send(room);
   });
 
+  fastify.get("/rooms", async (request, reply) => {
+    const query = request.query as any;
+    const allRooms = getAllRooms();
+    if (query.public === 'true') {
+      const publicRooms = allRooms.filter(r => (r as any).public);
+      return reply.send(publicRooms);
+    }
+    reply.send(allRooms);
+  });
+
   fastify.post('/matches', async (request: any, reply: any) => {
     const body = request.body as any;
     if (!body || !Array.isArray(body.players) || typeof body.score === 'undefined') {
