@@ -45,7 +45,7 @@ export class WebSocketClient {
                 return;
             }
 
-            const wsUrl = `ws://${apiHost}:8443/api/ws?userId=${userId}&token=${encodeURIComponent(token)}`;
+            const wsUrl = `wss://${apiHost}:8443/api/ws?userId=${userId}&token=${encodeURIComponent(token)}`;
             
             this.ws = new WebSocket(wsUrl);
 
