@@ -35,17 +35,25 @@ const socketToUserId = new Map<string, string | number>();
 /**
  * Register CORS plugin
  */
-const whitelist = ["http://localhost:5173", "http://localhost:7000"];
+const whitelist = ["http://localhost:8000", "http://localhost:7000"];
 app.register(cors, {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
+
     if (!origin) return callback(null, true);
-    if (whitelist.indexOf(origin) !== -1 || /http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):5173/.test(origin)) {
+
+
+    const localNetworkPattern = /http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):8000/;
+
+    if (
+      whitelist.includes(origin) ||
+      localNetworkPattern.test(origin)
+    ) {
       return callback(null, true);
     }
+
     return callback(new Error("Not allowed by CORS"), false);
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   credentials: true,
 });
 
