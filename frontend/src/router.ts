@@ -84,6 +84,16 @@ export function router(route: string): string {
         case "#/status":
             setTimeout(refreshStatus, 0);
             return Status();
+        case "#/chat":
+            if (isLoggedIn()) {
+                setTimeout(chatHandlers, 0);
+                setTimeout(setupSidebarTabs, 0);
+                return Chat();
+            }
+            else {
+                window.location.hash = "#/login";
+                return Login();
+            }
         case "#/pong/local":
             setTimeout(localPongHandlers, 0);
             return localPongPage();
