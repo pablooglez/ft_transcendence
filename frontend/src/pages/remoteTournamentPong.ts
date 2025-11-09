@@ -186,6 +186,12 @@ async function loadMatchInfo(matchIdParam: number) {
         
         // Get current user
         const currentUserId = getUserIdFromToken();
+
+        if (currentUserId != match.player1_id && currentUserId != match.player2_id) {
+            history.back();
+            return ;
+        }
+
         isPlayer1 = match.player1_id === currentUserId;
         player1Id = match.player1_id;
         player2Id = match.player2_id;
