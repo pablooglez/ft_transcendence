@@ -28,14 +28,14 @@ app.register(tournamentRoutes);
 app.register(gatewayRoutes);
 
 // CORS (puedes dejarlo donde estaba)
-const whitelist = ["http://localhost:8000"];
+const whitelist = ["https://localhost:8443"];
 app.register(cors, {
   origin: (origin, callback) => {
 
     if (!origin) return callback(null, true);
 
 
-    const localNetworkPattern = /http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):8000/;
+    const localNetworkPattern = /https:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):8443/;
 
     if (
       whitelist.includes(origin) ||
