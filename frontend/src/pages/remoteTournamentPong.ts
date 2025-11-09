@@ -189,6 +189,7 @@ async function loadMatchInfo(matchIdParam: number) {
 
         if (currentUserId != match.player1_id && currentUserId != match.player2_id) {
             history.back();
+            alert("You tried to enter in other user match");
             return ;
         }
 
