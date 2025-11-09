@@ -45,7 +45,7 @@ export function getUserIdFromToken(): number | null {
 export async function refreshAccessToken(): Promise<boolean> {
 
     try {
-        const res = await fetch(`http://${apiHost}:8080/auth/refresh`, {
+        const res = await fetch(`https://${apiHost}:8443/api/auth/refresh`, {
             method: "POST",
             credentials: "include",
         });

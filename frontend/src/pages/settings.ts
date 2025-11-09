@@ -114,7 +114,7 @@ export function settingsHandlers(accessToken: string) {
 
   async function fetchUserData() {
     try {
-      const res = await fetch(`http://${apiHost}:8080/users/me`, {
+      const res = await fetch(`https://${apiHost}:8443/api/users/me`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -131,7 +131,7 @@ export function settingsHandlers(accessToken: string) {
         }
         if (emailField)
           emailField.textContent = `Email: ${data.user.email}`;
-        const avatarIMG = await fetch(`http://${apiHost}:8080/users/getAvatar`, {
+        const avatarIMG = await fetch(`https://${apiHost}:8443/api/users/getAvatar`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -177,7 +177,7 @@ export function settingsHandlers(accessToken: string) {
 
 
     try {
-      const res = await fetch(`http://${apiHost}:8080/users/changeUsername`, {
+      const res = await fetch(`https://${apiHost}:8443/api/users/changeUsername`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -232,7 +232,7 @@ export function settingsHandlers(accessToken: string) {
     }
 
     try {
-      const res = await fetch (`http://${apiHost}:8080/users/changeEmail`, {
+      const res = await fetch (`https://${apiHost}:8080/users/changeEmail`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -265,7 +265,7 @@ export function settingsHandlers(accessToken: string) {
     }
     // Password policy to be implemented
     try {
-      const res = await fetch (`http://${apiHost}:8080/users/changePassword`, {
+      const res = await fetch (`https://${apiHost}:8080/users/changePassword`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -306,7 +306,7 @@ export function settingsHandlers(accessToken: string) {
     formData.append('avatar', file);
 
     try {
-      const res = await fetch(`http://${apiHost}:8080/users/changeAvatar`, {
+      const res = await fetch(`https://${apiHost}:8443/api/users/changeAvatar`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -329,7 +329,7 @@ export function settingsHandlers(accessToken: string) {
   deleteUserBtn.addEventListener("click", async (e) => {  
     e.preventDefault();
     try {
-      const res = await fetch (`http://${apiHost}:8080/users/removeUsers`, {
+      const res = await fetch (`https://${apiHost}:8080/users/removeUsers`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

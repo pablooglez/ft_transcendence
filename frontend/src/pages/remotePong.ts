@@ -19,7 +19,7 @@ let beforeUnloadHandler: () => void = () => {};
 let logoutWatchInterval: number | null = null;
 let removePresenceHooks: (() => void) | null = null;
 
-const apiHost = `http://${window.location.hostname}:8080`;
+const apiHost = `https://${window.location.hostname}:8443/api`;
 
 import {
 	WINNING_SCORE,

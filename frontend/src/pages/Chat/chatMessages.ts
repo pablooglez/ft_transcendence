@@ -62,7 +62,7 @@ function showInfoMessage(message: string, messageResultElement: HTMLElement | nu
 export async function sendMessage(recipientId: number, content: string) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${recipientId}/messages`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${recipientId}/messages`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
@@ -83,7 +83,7 @@ export async function sendMessage(recipientId: number, content: string) {
 export async function getMessages(otherUserId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${otherUserId}/messages`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${otherUserId}/messages`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {

@@ -6,7 +6,7 @@ const apiHost = `${window.location.hostname}`
 export async function fetchBlockedUsers() {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/blocked`, {
+        const res = await fetch(`https://${apiHost}:8443/api/blocked`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
@@ -88,7 +88,7 @@ export async function blockUser(blockedUserId: number) {
     try {
         const token = getAccessToken();
         
-        const url = `http://${apiHost}:8080/conversations/${blockedUserId}/block`;
+        const url = `https://${apiHost}:8443/api/conversations/${blockedUserId}/block`;
         const options = {
             method: 'POST',
             headers: { 
@@ -113,7 +113,7 @@ export async function blockUser(blockedUserId: number) {
 export async function unblockUser(blockedUserId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${blockedUserId}/block`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${blockedUserId}/block`, {
             method: 'DELETE',
             headers: { 
                 "Authorization": `Bearer ${token}`

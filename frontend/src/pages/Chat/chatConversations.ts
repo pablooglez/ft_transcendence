@@ -20,7 +20,7 @@ const apiHost = `${window.location.hostname}`;
 export async function getConversations() {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {

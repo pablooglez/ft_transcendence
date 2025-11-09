@@ -7,7 +7,7 @@ export async function acceptFriendInvitation() {
     try {
         const otherUserId = getActiveConversationId();
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${otherUserId}/accept-friend`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${otherUserId}/accept-friend`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
@@ -27,7 +27,7 @@ export async function rejectFriendInvitation() {
     try {
         const otherUserId = getActiveConversationId();
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${otherUserId}/reject-friend`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${otherUserId}/reject-friend`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
@@ -48,7 +48,7 @@ export async function checkAlreadyFriend() {
         const otherUserId = getActiveConversationId();
 
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/checkFriend`, {
+        const res = await fetch(`https://${apiHost}:8443/api/users/checkFriend`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
@@ -72,7 +72,7 @@ export async function sendFriendInvitation() {
     try {
         const otherUserId = getActiveConversationId();
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${otherUserId}/invite-friend`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${otherUserId}/invite-friend`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,

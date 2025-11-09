@@ -18,7 +18,7 @@ let handleVisibility: () => void = () => {};
 let beforeUnloadHandler: () => void = () => {};
 let clientUsername = "";
 
-const apiHost = `http://${window.location.hostname}:8080`;
+const apiHost = `https://${window.location.hostname}:8443/api`;
 
 import {
 	WINNING_SCORE,

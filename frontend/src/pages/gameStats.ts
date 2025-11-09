@@ -45,7 +45,7 @@ export function gameStatsHandlers(accessToken: string) {
     try {
       // For now, we'll fetch all matches for the current user and find the specific match
       // In a real implementation, you'd have an endpoint like /matches/${matchId}
-      const userRes = await fetch(`http://${apiHost}:8080/users/me`, {
+      const userRes = await fetch(`https://${apiHost}:8443/api/users/me`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -56,7 +56,7 @@ export function gameStatsHandlers(accessToken: string) {
         throw new Error('Failed to get user data');
       }
 
-  const historyRes = await fetch(`http://${apiHost}:8080/game/matches/player/${userData.user.id}`, {
+  const historyRes = await fetch(`https://${apiHost}:8443/api/game/matches/player/${userData.user.id}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -104,7 +104,7 @@ export function gameStatsHandlers(accessToken: string) {
       let resolvedRoomId = roomId;
       if ((resolvedRoomId === null || resolvedRoomId === 'N/A' || resolvedRoomId === undefined) && playersArr.length > 0) {
         try {
-          const roomsRes = await fetch(`http://${apiHost}:8080/game/rooms`, {
+          const roomsRes = await fetch(`https://${apiHost}:8443/api/game/rooms`, {
             method: 'GET',
             headers: { Authorization: `Bearer ${accessToken}` }
           });

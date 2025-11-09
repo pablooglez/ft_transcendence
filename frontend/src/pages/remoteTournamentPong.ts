@@ -18,7 +18,7 @@ let player1Id: number | null = null;
 let player2Id: number | null = null;
 let resultRecorded = false; // ensure victory/defeat only sent once
 
-const apiHost = `http://${window.location.hostname}:8080`;
+const apiHost = `https://${window.location.hostname}:8443/api`;
 
 import {
 	WINNING_SCORE,
@@ -174,7 +174,7 @@ export function remoteTournamentPongHandlers() {
 async function loadMatchInfo(matchIdParam: number) {
     try {
         const token = getAccessToken();
-        const response = await fetch(`http://${window.location.hostname}:8080/tournaments/matches/${matchIdParam}`, {
+        const response = await fetch(`https://${window.location.hostname}:8443/api/tournaments/matches/${matchIdParam}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -430,7 +430,7 @@ function endGame() {
 async function reportMatchResult(matchId: number, winnerId: number) {
     try {
         const token = getAccessToken();
-        const response = await fetch(`http://${window.location.hostname}:8080/tournaments/matches/${matchId}/result`, {
+        const response = await fetch(`https://${window.location.hostname}:8443/api/tournaments/matches/${matchId}/result`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
@@ -454,7 +454,7 @@ async function handleTournamentMatchEnd(matchId: number, winnerId: number, isWin
     try {
         // Get match details to find tournament ID
         const token = getAccessToken();
-        const matchResponse = await fetch(`http://${window.location.hostname}:8080/tournaments/matches/${matchId}`, {
+        const matchResponse = await fetch(`https://${window.location.hostname}:8443/api/tournaments/matches/${matchId}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -480,7 +480,7 @@ async function handleTournamentMatchEnd(matchId: number, winnerId: number, isWin
         } else {
             // Loser: leave the tournament
             console.log("Player lost the match, leaving tournament");
-            const leaveResponse = await fetch(`http://${window.location.hostname}:8080/tournaments/${tournamentId}/leave`, {
+            const leaveResponse = await fetch(`https://${window.location.hostname}:8443/api/tournaments/${tournamentId}/leave`, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${token}`,

@@ -11,7 +11,7 @@ export async function restoreSessionUser() {
       const userStr = localStorage.getItem("user");
       if (!userStr) {
         const token = getAccessToken();
-        const userSession = await fetch(`http://${apiHost}:8080/auth/restoreUserSession`, {
+        const userSession = await fetch(`https://${apiHost}:8443/api/auth/restoreUserSession`, {
           method: "GET",
           headers: {
           "Authorization": `Bearer ${token}`,
@@ -38,7 +38,7 @@ export async function userLoggedIn() {
       } 
       else {
         const token = getAccessToken();
-        const userSession = await fetch(`http://${apiHost}:8080/auth/restoreUserSession`, {
+        const userSession = await fetch(`https://${apiHost}:8443/api/auth/restoreUserSession`, {
           method: "GET",
           headers: {
           "Authorization": `Bearer ${token}`,
@@ -81,12 +81,12 @@ export function setupLoginHandlers() {
 
     const fortyTwoBtn = document.querySelector<HTMLButtonElement>("#fortyTwoLoginButton");
     fortyTwoBtn?.addEventListener("click", () => {
-      window.location.href = `http://${apiHost}:8080/auth/42/login`;
+      window.location.href = `https://${apiHost}:8080/auth/42/login`;
     });
 
     const googleBtn = document.querySelector<HTMLButtonElement>("#googleLoginButton");
     googleBtn?.addEventListener("click", async () => {
-      window.location.href = `http://${apiHost}:8080/auth/google/login`;
+      window.location.href = `https://${apiHost}:8080/auth/google/login`;
 
       await refreshAccessToken();
       const accessToken = getAccessToken();

@@ -84,7 +84,7 @@ async function resolveCurrentUsername(): Promise<string | null> {
     const headers: Record<string,string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
     console.log('[profile] resolveCurrentUsername: fetching /users/me with headers', Object.keys(headers));
-    const resp = await fetch(`http://${window.location.hostname}:8080/users/me`, { headers });
+    const resp = await fetch(`https://${window.location.hostname}:8443/api/users/me`, { headers });
     console.log('[profile] resolveCurrentUsername: /users/me status', resp.status);
     let body: any = null;
     try { body = await resp.json(); } catch (e) { console.warn('[profile] /users/me invalid json', e); }
@@ -346,7 +346,7 @@ export function profileViewHandlers() {
     (async () => {
       try {
         const token = getAccessToken();
-        const friendsResp = await fetch(`http://${window.location.hostname}:8080/users/getFriends`, {
+        const friendsResp = await fetch(`https://${window.location.hostname}:8443/api/users/getFriends`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

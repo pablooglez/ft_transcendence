@@ -330,10 +330,9 @@ export function chatHandlers() {
             // Clear form
             messageContentInput.value = '';
         } catch (error) {
-            // console.error('Error sending message:', error); // Eliminado para evitar logs en consola
             let errorMsg = '❌ Error sending message';
             if (error instanceof Error && error.message.includes('400')) {
-                errorMsg = 'No puedes enviar mensajes a este usuario porque está bloqueado.';
+                errorMsg = `You can't send messages to this user because they are blocked.`;
             }
             if (messageResult) {
                 messageResult.innerHTML = `<span class=\"error\">${errorMsg}</span>`;
@@ -689,66 +688,6 @@ export function chatHandlers() {
             contactName.onclick = async () => {
                 // Navegar al perfil del usuario
                 window.location.hash = `#/profile?username=${otherUserName}`;
-            };
-        }
-
-        // Botón añadir/quitar amigo
-        let friendsSet = (window as any).friendsSet;
-        if (!friendsSet) {
-            friendsSet = new Set();
-            (window as any).friendsSet = friendsSet;
-        }
-        let addFriendBtn = document.getElementById('add-friend-btn') as HTMLButtonElement;
-        if (!addFriendBtn) {
-            const chatHeader = document.querySelector('.chat-header .contact-details');
-            if (chatHeader) {
-                addFriendBtn = document.createElement('button');
-                addFriendBtn.id = 'add-friend-btn';
-                addFriendBtn.className = 'add-friend-btn';
-                addFriendBtn.style.marginLeft = '10px';
-                chatHeader.appendChild(addFriendBtn);
-            }
-        }
-        function updateFriendBtn() {
-            if (addFriendBtn) {
-                if (friendsSet.has(otherUserId)) {
-                    addFriendBtn.textContent = 'Remove friend';
-                    addFriendBtn.style.background = '#ff4444';
-                } else {
-                    addFriendBtn.textContent = 'Add friend';
-                    addFriendBtn.style.background = '#25D366';
-                }
-                addFriendBtn.style.color = 'white';
-                addFriendBtn.style.border = 'none';
-                addFriendBtn.style.borderRadius = '6px';
-                addFriendBtn.style.padding = '4px 12px';
-                addFriendBtn.style.cursor = 'pointer';
-            }
-        }
-        updateFriendBtn();
-        if (addFriendBtn) {
-            addFriendBtn.onclick = async () => {
-                addFriendBtn.disabled = true;
-                try {
-                    if (friendsSet.has(otherUserId)) {
-                        await removeFriend(otherUserId);
-                        friendsSet.delete(otherUserId);
-                        showSuccessMessage('Amigo eliminado correctamente', messageResult);
-                    } else {
-                        await addFriend(otherUserId);
-                        friendsSet.add(otherUserId);
-                        showSuccessMessage('Amigo añadido correctamente', messageResult);
-                    }
-                } catch (err: any) {
-                    let errorMsg = 'Error actualizando amistad';
-                    if (err && err.message) {
-                        errorMsg += ': ' + err.message;
-                    }
-                    showErrorMessage(errorMsg, messageResult);
-                } finally {
-                    updateFriendBtn();
-                    addFriendBtn.disabled = false;
-                }
             };
         }
 

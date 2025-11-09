@@ -30,7 +30,7 @@ export function stopPolling() {
 export async function createRemoteTournament(tournamentName: string, tournamentPlayers: number) {
     const token = getAccessToken();
     
-    const tournament = await fetch(`http://${apiHost}:8080/tournaments/remote`, {
+    const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/remote`, {
         method: "POST",
         headers: { "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -47,7 +47,7 @@ export async function createRemoteTournament(tournamentName: string, tournamentP
 export async function getRemoteTournamentData(tournamentId: number) {
     const token = getAccessToken();
     
-    const tournament = await fetch(`http://${apiHost}:8080/tournaments/${tournamentId}`, {
+    const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/${tournamentId}`, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${token}`,
@@ -63,7 +63,7 @@ export async function getRemoteTournamentData(tournamentId: number) {
 export async function getRemoteTournaments() {
     const token = getAccessToken();
     
-    const tournaments = await fetch(`http://${apiHost}:8080/tournaments`, {
+    const tournaments = await fetch(`https://${apiHost}:8443/api/tournaments`, {
         method: "GET",
         headers: { "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -80,7 +80,7 @@ export async function loadTournamentPlayers(tournamentId: number) {
     const token = getAccessToken();
     
     try {
-        const players = await fetch(`http://${apiHost}:8080/tournaments/${tournamentId}/players`, {
+        const players = await fetch(`https://${apiHost}:8443/api/tournaments/${tournamentId}/players`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -88,7 +88,7 @@ export async function loadTournamentPlayers(tournamentId: number) {
             credentials: "include",
         });
 
-        const tournament = await fetch(`http://${apiHost}:8080/tournaments/${tournamentId}`, {
+        const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/${tournamentId}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -150,7 +150,7 @@ export async function showTournamentMatchesLobbyForPlayers(tournamentId: number)
     
     try {
         // Get tournament data to show the name
-        const tournamentResponse = await fetch(`http://${apiHost}:8080/tournaments/${tournamentId}`, {
+        const tournamentResponse = await fetch(`https://${apiHost}:8443/api/tournaments/${tournamentId}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -159,7 +159,7 @@ export async function showTournamentMatchesLobbyForPlayers(tournamentId: number)
         });
         const tournamentData = await tournamentResponse.json();
 
-        const response = await fetch(`http://${apiHost}:8080/tournaments/${tournamentId}/matches`, {
+        const response = await fetch(`https://${apiHost}:8443/api/tournaments/${tournamentId}/matches`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,

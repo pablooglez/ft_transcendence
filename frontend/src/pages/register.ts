@@ -30,7 +30,7 @@ export function registerHandlers() {
       }*/
 
       try {
-        const res = await fetch(`http://${apiHost}:8080/auth/register`, {
+        const res = await fetch(`https://${apiHost}:8443/apiauth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password, email }),

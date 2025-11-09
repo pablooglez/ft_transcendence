@@ -32,7 +32,7 @@ export function refreshStatus() {
 }
 
 export async function loadHealthStatus() {
-    const response = await fetch(`http://${apiHost}:8080/health`, {
+    const response = await fetch(`https://${apiHost}:8443/api/health`, {
         method: "GET",
         headers: { "Content-Type": "application/json"},
     });

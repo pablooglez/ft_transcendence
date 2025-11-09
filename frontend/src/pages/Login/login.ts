@@ -86,7 +86,7 @@ export function loginHandlers(): void {
     enableBtn.onclick = async () => {
       try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/auth/enable-2fa`, {
+        const res = await fetch(`https://${apiHost}:8443/api/auth/enable-2fa`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -114,7 +114,7 @@ export function loginHandlers(): void {
           showQRBtn.onclick = async () => {
            try {
              const token = getAccessToken();
-             const res = await fetch(`http://${apiHost}:8080/auth/generate-qr`, {
+             const res = await fetch(`https://${apiHost}:8443/api/auth/generate-qr`, {
                method: "POST",
                headers: {
                  "Content-Type": "application/json",
@@ -147,7 +147,7 @@ export function loginHandlers(): void {
       const code = (document.querySelector<HTMLInputElement>("#verify-2fa-code")!).value;
 
       try {
-        const res = await fetch(`http://${apiHost}:8080/auth/verify-2fa`, {
+        const res = await fetch(`https://${apiHost}:8443/api/auth/verify-2fa`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId, code }),

@@ -28,7 +28,7 @@ async function postApi(path: string, method: "POST" | "GET" = "POST"): Promise<R
     const token = getAccessToken();
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
-    return fetch(`http://${apiHost}:8080${path}`, { method, headers });
+    return fetch(`https://${apiHost}:8443/api${path}`, { method, headers });
 }
 
 function onTournamentCreated(response: { tournament: Tournament; shuffledPlayers: string[] }) {
@@ -81,7 +81,7 @@ async function startRemoteTournamentFlow(tournamentData: any) {
 
             // Advance to next round
             console.log("Sending winners to backend:", roundWinners);
-            const res = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}/advance`, {
+            const res = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/advance`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ winners: roundWinners }),
@@ -168,7 +168,7 @@ async function startLocalTournamentFlow(tournamentData: any) {
 
             // Advance to next round
             console.log("Sending winners to backend:", roundWinners);
-            const res = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}/advance`, {
+            const res = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/advance`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ winners: roundWinners }),
@@ -236,7 +236,7 @@ async function showTournamentMatchesLobby(tournamentData: any) {
 
     // Get tournament name
     const token = getAccessToken();
-    const tournamentResponse = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}`, {
+    const tournamentResponse = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}`, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${token}`,
@@ -249,7 +249,7 @@ async function showTournamentMatchesLobby(tournamentData: any) {
     const matchesWithRooms = await Promise.all(matches.map(async (match: any) => {
         console.log("Creating private room for match:", match.id);
         // Create PRIVATE room for tournament match so it won't appear in public lobby
-        const response = await fetch(`http://${apiHost}:8080/game/remote-rooms`, {
+        const response = await fetch(`https://${apiHost}:8443/api/game/remote-rooms`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -263,7 +263,7 @@ async function showTournamentMatchesLobby(tournamentData: any) {
         
         // Update the match with the roomId in the database
         console.log("Updating match", match.id, "with roomId:", roomId);
-        const updateResponse = await fetch(`http://${apiHost}:8080/tournaments/matches/${match.id}/room`, {
+        const updateResponse = await fetch(`https://${apiHost}:8443/api/tournaments/matches/${match.id}/room`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -332,7 +332,7 @@ export async function tournamentHandlers() {
     
     startBtn?.addEventListener("click", async () => {
         const token = getAccessToken();
-        const tournament = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}/start-remote`, {
+        const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/start-remote`, {
             method: "POST",
             headers: {                 
                 "Authorization": `Bearer ${token}`, },
@@ -349,7 +349,7 @@ export async function tournamentHandlers() {
 
     joinBtn?.addEventListener("click", async () => {
         const token = getAccessToken();
-        const response = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}/join`, {
+        const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/join`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -361,7 +361,7 @@ export async function tournamentHandlers() {
     
     leaveBtn?.addEventListener("click", async () => {
         const token = getAccessToken();
-        const response = await fetch(`http://${apiHost}:8080/tournaments/${currentTournamentId}/leave`, {
+        const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournamentId}/leave`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -480,7 +480,7 @@ export async function tournamentHandlers() {
             aliasSet.add(normalizedAlias);
         }
 
-        const tournament = await fetch(`http://${apiHost}:8080/tournaments/local`, {
+        const tournament = await fetch(`https://${apiHost}:8443/api/tournaments/local`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ tournamentName, tournamentPlayers, playerOne, playerTwo, playerThree, playerFour }),
@@ -503,7 +503,7 @@ export async function tournamentHandlers() {
         if (!currentTournament)
             return alert("No active tournament");
 
-        const response = await fetch(`http://${apiHost}:8080/tournaments/${currentTournament.id}/start`, {
+        const response = await fetch(`https://${apiHost}:8443/api/tournaments/${currentTournament.id}/start`, {
             method: "POST",
         })
         const tournamentData = await response.json();

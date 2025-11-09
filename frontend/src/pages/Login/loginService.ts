@@ -12,7 +12,7 @@ export async function login(username: string, password: string) {
     const logoutBtn = getElement<HTMLButtonElement>("#logout-btn");
 
        try {
-      const res = await fetch(`http://${apiHost}:8080/auth/login`, {
+      const res = await fetch(`https://${apiHost}:8443/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -58,7 +58,7 @@ export async function logout() {
 
     try {
       const token = getAccessToken();
-      await fetch(`http://${apiHost}:8080/auth/logout`, {
+      await fetch(`https://${apiHost}:8443/api/auth/logout`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -93,7 +93,7 @@ export async function logoutOutsideLoginPage() {
 
     try {
       const token = getAccessToken();
-      await fetch(`http://${apiHost}:8080/auth/logout`, {
+      await fetch(`https://${apiHost}:8443/api/auth/logout`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -118,7 +118,7 @@ export async function logoutOutsideLoginPage() {
 }
 
 export async function fetchCurrentUser(accessToken: string) {
-  const res = await fetch(`http://${apiHost}:8080/users/me`, {
+  const res = await fetch(`https://${apiHost}:8443/api/users/me`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,

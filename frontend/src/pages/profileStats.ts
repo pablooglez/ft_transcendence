@@ -20,7 +20,7 @@ async function resolveCurrentUsername(): Promise<string | null> {
     const token = getAccessToken();
     const headers: Record<string,string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const resp = await fetch(`http://${window.location.hostname}:8080/users/me`, { headers });
+    const resp = await fetch(`https://${window.location.hostname}:8443/api/users/me`, { headers });
     if (resp.ok) {
       const body = await resp.json();
       return body?.user?.username || null;

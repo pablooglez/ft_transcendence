@@ -172,7 +172,7 @@ export function profileHandlers() {
         emailField.textContent = `Email: ${userData.email}`;
 
       // Fetch avatar
-      const avatarIMG = await fetch(`http://${apiHost}:8080/users/getAvatar`, {
+      const avatarIMG = await fetch(`https://${apiHost}:8443/api/users/getAvatar`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -200,7 +200,7 @@ export function profileHandlers() {
   async function fetchAndRenderFriends(userId: number, token: string) {
     try {
       const friendsDiv = document.getElementById('friends-list');
-      const res = await fetch(`http://${apiHost}:8080/users/getFriends`, {
+      const res = await fetch(`https://${apiHost}:8443/api/users/getFriends`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

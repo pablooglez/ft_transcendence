@@ -60,7 +60,7 @@ export async function getUsername(userId: number): Promise<string> {
 export async function getUserProfile(userId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/getUserById`, {
+        const res = await fetch(`https://${apiHost}:8443/api/users/getUserById`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
@@ -268,7 +268,7 @@ export async function getUserAvatar(userId: number): Promise<string | null> {
     try {
         const token = getAccessToken();
         console.log(`[Avatar] Fetching avatar for user ID: ${userId}`);
-        const response = await fetch(`http://${apiHost}:8080/users/getAvatar`, {
+        const response = await fetch(`https://${apiHost}:8443/api/users/getAvatar`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

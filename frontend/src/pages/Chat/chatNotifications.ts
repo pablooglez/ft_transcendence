@@ -25,7 +25,7 @@ const apiHost = `${window.location.hostname}`
 export async function getNotifications() {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/notifications`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/notifications`, {
             method: "GET",
             headers: { 
                 "Content-Type": "application/json",
@@ -43,7 +43,7 @@ export async function getNotifications() {
 export async function getSpecificNotification(notificationId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${notificationId}/notification`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${notificationId}/notification`, {
             method: "GET",
             headers: { 
                 "Content-Type": "application/json",
@@ -66,7 +66,7 @@ export async function updateReadAtNotification(notification: any) {
         const notificationId = notification[0].id;
 
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${notificationId}/read`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${notificationId}/read`, {
             method: "GET",
             headers: { 
                 "Content-Type": "application/json",
@@ -88,7 +88,7 @@ export async function updateReadAtNotification(notification: any) {
 export async function deleteNotification(notificationId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${notificationId}/notifyDelete`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${notificationId}/notifyDelete`, {
             method: "DELETE",
             headers: { 
                 "Authorization": `Bearer ${token}` }

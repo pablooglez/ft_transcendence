@@ -20,7 +20,7 @@ let roomId: string | null = null;
 let isRoomCreator = false;
 let gameInitialized = false;
 
-const apiHost = `http://${window.location.hostname}:8080`;
+const apiHost = `https://${window.location.hostname}:8443/api`;
 const wsHost = `ws://${window.location.hostname}:7000`;
 
 const keysPressed = new Set<string>();

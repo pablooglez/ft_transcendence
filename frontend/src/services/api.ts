@@ -4,7 +4,7 @@ import { refreshAccessToken } from "../state/authState";
 export async function getUserStatsById(id: number): Promise<{victories: number, defeats: number} | null> {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/getResults`, {
+        const res = await fetch(`https://${apiHost}:8443/api/users/getResults`, {
             method: 'GET',
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -21,7 +21,7 @@ export async function getUserStatsById(id: number): Promise<{victories: number, 
 export async function getUserIdByUsername(username: string): Promise<number | null> {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/getUserByName`, {
+        const res = await fetch(`https://${apiHost}:8443/api/users/getUserByName`, {
             method: 'POST',
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -41,7 +41,7 @@ export async function getUserIdByUsername(username: string): Promise<number | nu
 export async function getUserByUsername(username: string): Promise<any | null> {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/getUserByName`, {
+        const res = await fetch(`https://${apiHost}:8443/api/users/getUserByName`, {
             method: 'POST',
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -60,7 +60,7 @@ export async function getUserByUsername(username: string): Promise<any | null> {
 export async function getUserById(id: number): Promise<any | null> {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/getUserById`, {
+        const res = await fetch(`https://${apiHost}:8443/api/users/getUserById`, {
             method: 'POST',
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -81,7 +81,7 @@ const apiHost = window.location.hostname;
 export async function pingGateway(): Promise<string> {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/ping` , {
+        const res = await fetch(`https://${apiHost}:8443/api/ping` , {
                 headers: { "Authorization": `Bearer ${token}` }
             });
         if (!res.ok) {
@@ -101,7 +101,7 @@ export async function pingGateway(): Promise<string> {
 export async function sendMessage(recipientId: number, content: string) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/1/messages`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/1/messages`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
@@ -122,7 +122,7 @@ export async function sendMessage(recipientId: number, content: string) {
 export async function getMessages(otherUserId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${otherUserId}/messages`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${otherUserId}/messages`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
@@ -138,7 +138,7 @@ export async function blockUser(blockedUserId: number) {
     try {
         const token = getAccessToken();
         
-        const url = `http://${apiHost}:8080/conversations/${blockedUserId}/block`;
+        const url = `https://${apiHost}:8443/api/conversations/${blockedUserId}/block`;
         const options = {
             method: 'POST',
             headers: { 
@@ -163,7 +163,7 @@ export async function blockUser(blockedUserId: number) {
 export async function unblockUser(blockedUserId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/${blockedUserId}/block`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/${blockedUserId}/block`, {
             method: 'DELETE',
             headers: { 
                 "Authorization": `Bearer ${token}`
@@ -182,7 +182,7 @@ export async function unblockUser(blockedUserId: number) {
 export async function sendGameInvitation(toUserId: number, gameType: string = 'pong') {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/game-invitations/send`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/game-invitations/send`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
@@ -203,7 +203,7 @@ export async function sendGameInvitation(toUserId: number, gameType: string = 'p
 export async function getGameInvitations() {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/game-invitations/received`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/game-invitations/received`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
@@ -218,7 +218,7 @@ export async function getGameInvitations() {
 export async function getSentGameInvitations() {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/game-invitations/sent`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/game-invitations/sent`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
@@ -233,7 +233,7 @@ export async function getSentGameInvitations() {
 export async function acceptGameInvitation(invitationId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/game-invitations/${invitationId}/accept`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/game-invitations/${invitationId}/accept`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`
@@ -257,7 +257,7 @@ export async function acceptGameInvitation(invitationId: number) {
 export async function rejectGameInvitation(invitationId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/conversations/game-invitations/${invitationId}/reject`, {
+        const res = await fetch(`https://${apiHost}:8443/api/conversations/game-invitations/${invitationId}/reject`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`
@@ -277,7 +277,7 @@ export async function rejectGameInvitation(invitationId: number) {
 export async function getUserProfile(userId: number) {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/getUserById`, {
+        const res = await fetch(`https://${apiHost}:8443/api/users/getUserById`, {
             method: 'POST',
             headers: { 
                 "Authorization": `Bearer ${token}`,
@@ -297,7 +297,7 @@ export async function getUserProfile(userId: number) {
 export async function getAllUsers() {
     try {
         const token = getAccessToken();
-        const res = await fetch(`http://${apiHost}:8080/users/getAllUsers`, {
+        const res = await fetch(`https://${apiHost}:8443/api/users/getAllUsers`, {
             headers: { 
                 "Authorization": `Bearer ${token}`
             }
@@ -314,7 +314,7 @@ export async function getAllUsers() {
 export async function getMatchesByPlayerId(playerId: number): Promise<any[]> {
     try {
         let token = getAccessToken();
-    let res = await fetch(`http://${apiHost}:8080/game/matches/player/${playerId}`, {
+    let res = await fetch(`https://${apiHost}:8443/api/game/matches/player/${playerId}`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`
@@ -325,7 +325,7 @@ export async function getMatchesByPlayerId(playerId: number): Promise<any[]> {
         if (res.status === 401) {
             await refreshAccessToken();
             token = getAccessToken();
-            res = await fetch(`http://${apiHost}:8080/game/matches/player/${playerId}`, {
+            res = await fetch(`https://${apiHost}:8443/api/game/matches/player/${playerId}`, {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${token}`
