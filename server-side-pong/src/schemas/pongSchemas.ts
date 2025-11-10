@@ -280,13 +280,6 @@ export const powerupSchema = {
     },
     additionalProperties: true,
   },
-  body: {
-    type: "object",
-    properties: {
-      enabled: { type: "boolean" },
-    },
-    additionalProperties: false,
-  },
   response: basicRoomActionResponse,
 };
 
