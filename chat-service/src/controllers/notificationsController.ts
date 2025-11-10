@@ -32,7 +32,7 @@ export async function getNotificationsController(req: FastifyRequest, reply: Fas
         return reply.code(200).send({ success: false, error: "Missing userId" });
 
     try {
-        const notifications = await getUserNotifications(userId);
+        const notifications = await getUserNotifications(Number(userId));
 
         console.log("Notifications", notifications);
         return reply.send(notifications);
@@ -65,7 +65,7 @@ export async function getSpecificNotificationController(req: FastifyRequest, rep
         return reply.code(200).send({ success: false, error: "Missing userId" });
 
     try {
-        const notifications = await getSpecificUserNotification(userId, Number(notId));
+        const notifications = await getSpecificUserNotification(Number(userId), Number(notId));
 
         console.log("Notifications", notifications);
         return reply.send(notifications);
