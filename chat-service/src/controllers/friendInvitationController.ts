@@ -10,7 +10,7 @@ export async function inviteFriendController(req: FastifyRequest, reply: Fastify
 	const userId = req.headers["x-user-id"];
 
     try {
-        if (!userId || isNaN(userId)) {
+        if (!userId || isNaN(Number(userId))) {
             return reply.code(200).send({ success: false, error: "Invalid or missing user ID" });
         }
         if (!otherUserId || isNaN(Number(otherUserId))) {
@@ -75,7 +75,7 @@ export async function rejectFriendInvitationController(req: FastifyRequest, repl
 
     try {
 
-        if (!userId || isNaN(userId)) {
+        if (!userId || isNaN(Number(userId))) {
             return reply.code(200).send({ success: false, error: "Invalid or missing user ID" });
         }
         if (!otherUserId || isNaN(Number(otherUserId))) {
