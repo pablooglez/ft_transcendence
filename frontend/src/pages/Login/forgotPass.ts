@@ -1,5 +1,5 @@
 import { forgotPassHTML } from "./loginTemplate";
-import { setText } from "./loginDOM";
+import { setText, showElement } from "./loginDOM";
 
 const apiHost = `${window.location.hostname}`;
 
@@ -17,7 +17,6 @@ export function forgotPassHandle() {
     
     changeSubmit.addEventListener("click", async () => {
         const emailPass = (document.querySelector<HTMLInputElement>("#email-pass")!).value;
-
         await changePassword(emailPass);
     });
 }
@@ -31,11 +30,11 @@ async function changePassword(email: string) {
         body: JSON.stringify({ email }),
         credentials: "include", // include cookies
       });
-
       const result = document.querySelector<HTMLParagraphElement>("#result")!;
       const data = await res.json();
-        if (res.ok) {
-            setText(result, `✅ Password changed`);
+      showElement(result);
+        if (res.ok && data.success === true) {
+            setText(result, data.message);
             setTimeout(() => {window.location.hash = "#/login" }, 1000);
         } else {
             setText(result, `${data.error || "Password changing failed"}`);

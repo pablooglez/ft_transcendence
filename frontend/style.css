@@ -1238,6 +1238,11 @@ header {
   margin-left: 1rem;
 }
 
+.pass-result {
+  color: white;
+  margin-left: 1rem;
+}
+
 .terms-wrapper {
     display: flex;
     align-items: center;

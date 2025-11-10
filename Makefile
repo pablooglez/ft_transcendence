@@ -33,5 +33,8 @@ erase:
 
 re: down clean up
 
-volume-rm:
+volume-rm-frontend:
+	docker volume rm ft_transcendence_frontend_dist
+
+volume-rm-all:
 	docker volume rm $$(docker volume ls -q)
