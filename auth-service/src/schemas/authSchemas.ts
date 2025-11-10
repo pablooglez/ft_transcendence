@@ -106,58 +106,51 @@ export const logoutSchema = {
     },
 } as const;
 
-export const verify2FASchema = { 
-    description: "Verify a user's 2FA code",
-    tags: ["auth"],
-    body: {
-        type: "object",
-        required: ["userId", "code"],
-        properties: {
-            userId: { type: "number" },
-            code: { type: "string", minLength: 6},
-        },
+export const verify2FASchema = {
+  description: "Verifies a 2FA code and either enables 2FA or returns access tokens.",
+  tags: ["auth", "2fa"],
+  body: {
+    type: "object",
+    required: ["userId", "code"],
+    properties: {
+      userId: { type: "number" },
+      code: { type: "string", minLength: 6, maxLength: 6 },
     },
-    response: {
-        200: {
-            oneOf: [
-                {
-                    type: "object",
-                    properties: {
-                        success: { type: "boolean" },
-                        message: { type: "string" },
-                    },
-                    required: ["success", "message"],
-                },
-                {
-                    type: "object",
-                    properties: {
-                        accessToken: { type: "string" },
-                        user: {
-                            type: "object",
-                            properties: {
-                                id: { type: "number" },
-                                username: { type: "string" },
-                                email: { type: "string" },
-                                twofa: { type: "boolean" },
-                            },
-                            required: ["id", "username", "email", "twofa"],
-                        },
-                    },
-                    required: ["accessToken", "user"],
-                },
-            ],
+  },
+  response: {
+    200: {
+      oneOf: [
+        {
+          type: "object",
+          properties: {
+            success: { type: "boolean" },
+            message: { type: "string" },
+          },
+          required: ["success", "message"],
+          additionalProperties: false,
         },
-        400: {
-            type: "object",
-            properties: { error: { type: "string" } },
-            required: ["error"],
+        {
+          type: "object",
+          properties: {
+            accessToken: { type: "string" },
+            user: {
+              type: "object",
+              properties: {
+                id: { type: "number" },
+                username: { type: "string" },
+                email: { type: "string" },
+                twofa: { type: "boolean" },
+              },
+              required: ["id", "username", "email", "twofa"],
+              additionalProperties: false,
+            },
+          },
+          required: ["accessToken", "user"],
+          additionalProperties: false,
         },
-        401: {
-            type: "object",
-            properties: { error: { type: "string" } },
-            required: ["error"],
-        },
+      ],
     },
+  },
 } as const;
 
 export const enable2FASchema = {
