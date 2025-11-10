@@ -33,6 +33,7 @@ async function postApi(path: string, method: "POST" | "GET" = "POST"): Promise<R
 
 function onTournamentCreated(response: { tournament: Tournament; shuffledPlayers: string[] }) {
     currentTournament = response.tournament;
+    currentTournamentId = response.tournament.id;
     currentPlayers = response.shuffledPlayers;
 }
 
@@ -54,6 +55,7 @@ function setTournamentContent(html: string) {
 async function startRemoteTournamentFlow(tournamentData: any) {
     let matches = tournamentData.matches;
     const players = tournamentData.players;
+    currentTournamentId = tournamentData.tournament.id || currentTournamentId;
     if (!players || players.length === 0)
         return ;
 
@@ -141,6 +143,7 @@ async function startRemoteTournamentFlow(tournamentData: any) {
 
 async function startLocalTournamentFlow(tournamentData: any) {
     let matches = tournamentData.matches;
+    currentTournamentId = tournamentData.tournament.id || currentTournamentId;
     const players = tournamentData.players;
     if (!players || players.length === 0) return;
 
