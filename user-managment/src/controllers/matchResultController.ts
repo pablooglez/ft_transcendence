@@ -14,7 +14,7 @@ export async function getResultsController(req: FastifyRequest, reply: FastifyRe
 }
 
 export async function addVictoryController(req: FastifyRequest, reply: FastifyReply) {
-    const { userId } = req.body as { userId: number };
+    const userId = req.headers["x-user-id"];
 
 	if (!userId) {
 		return reply.code(401).send({ error: "Not authenticated" });
