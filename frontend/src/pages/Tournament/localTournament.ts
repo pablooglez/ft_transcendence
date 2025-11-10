@@ -203,6 +203,7 @@ export async function playTournamentMatch(match: {
 }
 
 async function startTournamentGame(isAiMode: boolean, playerLeft: string, playerRight: string) {
+    console.log('[LocalPong] startTournamentGame called', { roomId, isAiMode, playerLeft, playerRight });
     // Ensure everything is clean before starting
     cleanup();
 
@@ -226,33 +227,53 @@ async function startTournamentGame(isAiMode: boolean, playerLeft: string, player
 
     if (socket) cleanup();
 
-    socket = io(apiHost, { 
+    const backendSocketUrl = window.location.origin;
+    console.log('[LocalPong] Creating socket to', backendSocketUrl);
+    socket = io(backendSocketUrl, {
         transports: ['websocket'],
         auth: { token: "local" }
     });
+
+    socket.on('connect_error', (err: any) => {
+        console.error('[LocalPong] Socket connect_error', err);
+    });
+    socket.on('connect_timeout', (t: any) => {
+        console.warn('[LocalPong] Socket connect_timeout', t);
+    });
+    socket.on('reconnect_attempt', (n: number) => {
+        console.log('[LocalPong] Socket reconnect_attempt', n);
+    });
+
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
     socket!.on('connect', async () => {
-        console.log(`[LocalPong] Socket connected, joining room '${roomId}'`);
+    console.log(`[LocalPong] Socket connected`, { socketId: socket!.id, roomId });
+    console.log('[LocalPong] Emitting joinRoom', { roomId });
         socket!.emit("joinRoom", { roomId });
 
         try {
-            await postGame(`/game/${roomId}/stop-ai`);
+            const stopAiResp = await postGame(`/game/${roomId}/stop-ai`);
+            console.log('[LocalPong] stop-ai response', { status: stopAiResp.status });
+
             const initResponse = await postGame(`/game/${roomId}/init`);
+            console.log('[LocalPong] init response', { status: initResponse.status });
             if (!initResponse.ok) throw new Error(`init failed (${initResponse.status})`);
 
             // Enable powerup for tournament games to increase ball speed on paddle hits
             const powerupResponse = await postGame(`/game/${roomId}/powerup?enabled=true`);
+            console.log('[LocalPong] powerup response', { status: powerupResponse.status });
             if (!powerupResponse.ok) console.warn(`[LocalTournament] Failed to enable powerup (${powerupResponse.status})`);
 
             if (isAiMode) {
                 const startAiResponse = await postGame(`/game/${roomId}/start-ai`);
+                console.log('[LocalPong] start-ai response', { status: startAiResponse.status });
                 if (!startAiResponse.ok) throw new Error(`start-ai failed (${startAiResponse.status})`);
             }
 
             const resumeResponse = await postGame(`/game/${roomId}/resume`);
+            console.log('[LocalPong] resume response', { status: resumeResponse.status });
             if (!resumeResponse.ok) throw new Error(`resume failed (${resumeResponse.status})`);
 
             isGameRunning = true;
@@ -270,7 +291,12 @@ async function startTournamentGame(isAiMode: boolean, playerLeft: string, player
     });
 
     socket!.on("gameState", (state: GameState) => {
+        console.log('[LocalPong] Received gameState', state);
         gameState = state;
+        // basic validation to help debugging
+        if (!state || !state.paddles || typeof state.paddles.left?.y === 'undefined') {
+            console.warn('[LocalPong] Invalid gameState received', state);
+        }
         draw();
         if (state.gameEnded) checkWinner();
     });
@@ -307,7 +333,7 @@ async function startTournamentGame(isAiMode: boolean, playerLeft: string, player
         setTimeout(() => window.location.reload(), 2000);
     });
 
-    // Manejo de reconexión automática: reinicia la UI si socket.io reconecta
+    // Handle reconnection attempts
     if (typeof window !== 'undefined') {
         window.addEventListener('DOMContentLoaded', () => {
             if (socket) {
@@ -326,13 +352,17 @@ async function startTournamentGame(isAiMode: boolean, playerLeft: string, player
 }
 
 function draw() {
-    if (!ctx) return;
+    console.log('[LocalPong] draw called', { ctxExists: !!ctx, paddles: gameState.paddles, ball: gameState.ball, scores: gameState.scores });
+    if (!ctx) {
+        console.warn('[LocalPong] draw skipped because ctx is null');
+        return;
+    }
 
-    // Fondo
+    // Background
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Línea central
+    // Central dashed line
     ctx.strokeStyle = "#FFF";
     ctx.setLineDash([10, 5]);
     ctx.beginPath();
@@ -341,13 +371,13 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Pala izquierda
+    // Left paddle
     ctx.shadowColor = "#42F3FA";
     ctx.shadowBlur = 15;
     ctx.fillStyle = "#42F3FA";
     ctx.fillRect(PADDLE_OFFSET_X, gameState.paddles.left.y, PADDLE_WIDTH, PADDLE_HEIGHT);
 
-    // Pala derecha
+    // Right paddle
     ctx.shadowColor = "#FE92FD";
     ctx.shadowBlur = 15;
     ctx.fillStyle = "#FE92FD";
@@ -355,7 +385,7 @@ function draw() {
     
     ctx.shadowBlur = 0;
     
-    // Bola
+    // ball
     if (!gameState.gameEnded) {
         ctx.shadowColor = "#ffffff";
         ctx.shadowBlur = 10;
@@ -365,7 +395,7 @@ function draw() {
         ctx.fill();
     }
 
-    // Puntuación
+    // Scoreboard
     ctx.shadowBlur = 0;
     const scoreboard = document.getElementById("scoreboard");
     if (scoreboard) {
