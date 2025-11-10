@@ -5,6 +5,9 @@ import { loadConversationsDebounced } from "./chatConversations";
 import { getConnectedUsersSet, getActiveConversationId } from "./chatState";
 import { handleUserSearch } from "./chatUserSearch";
 
+// Store handler reference to avoid duplicates
+let chatMessageHandler: ((message: ChatMessage) => void) | null = null;
+
 function handleIncomingMessage(message: ChatMessage) {
     try {
         if (message.type === 'message' && message.data && message.data.event_type === 'game_invitation_accepted') {
@@ -123,21 +126,40 @@ function showTypingIndicator(show: boolean) {
 export async function initializeWebSocket() {
     try {
         const userId = getCurrentUserId();
-            
-        await websocketClient.connect(userId);
+        
+        // Don't reconnect if already connected (main.ts already handles this)
+        if (!websocketClient.isConnected()) {
+            await websocketClient.connect(userId);
+        }
+        
+        // Remove old handler if exists to avoid duplicates
+        if (chatMessageHandler) {
+            websocketClient.removeMessageHandler(chatMessageHandler);
+        }
+        
+        // Create and store new handler
+        chatMessageHandler = (message: ChatMessage) => {
+            handleIncomingMessage(message);
+        };
             
         // Set up message handler for incoming messages
-
-        websocketClient.onMessage((message: ChatMessage) => {
-            // Handle special server-sent events embedded in message.data
-            handleIncomingMessage(message);
-        });
+        websocketClient.onMessage(chatMessageHandler);
             
         // Update connection status in UI
         updateConnectionStatus(true);
             
     } catch (error) {
         updateConnectionStatus(false);
+    }
+}
+
+/**
+ * Cleanup WebSocket handlers when leaving chat page
+ */
+export function cleanupWebSocket() {
+    if (chatMessageHandler) {
+        websocketClient.removeMessageHandler(chatMessageHandler);
+        chatMessageHandler = null;
     }
 }
 
