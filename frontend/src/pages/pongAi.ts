@@ -157,7 +157,14 @@ function prepareGameUI() {
 }
 
 function startGameVsAI() {
-    socket = io(apiHost);
+    const wsHost = apiHost.replace(/\/api\/?$/i, '');
+    socket = io(wsHost, {
+        path: "/socket.io",
+        transports: ['websocket'],
+        auth: {
+            token: "local"
+        }
+    });
     roomId = "ai-room-" + Math.random().toString(36).substring(2, 8);
 
     socket.on('connect', async () => {

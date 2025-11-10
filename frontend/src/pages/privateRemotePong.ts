@@ -284,8 +284,13 @@ async function registerMatchToPongService(winnerSide: "left" | "right", score: {
 }
 
 function startGame(roomIdToJoin: string) {
-    socket = io(apiHost, {
-        path: "/socket.io/",
+    const wsHost = apiHost.replace(/\/api\/?$/i, '');
+    socket = io(wsHost, {
+        path: "/socket.io",
+        transports: ['websocket'],
+        auth: {
+            token: "local"
+        }
     });
 
     document.getElementById("roleInfo")!.textContent = `Joining room ${roomIdToJoin}...`;

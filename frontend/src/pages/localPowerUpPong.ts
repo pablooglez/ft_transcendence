@@ -301,9 +301,10 @@ async function startGame(isAiMode: boolean) {
         // If there’s a previous socket, clean it up
         cleanup();
     }
-    socket = io(apiHost, {
-        path: "/socket.io/",
-        transports: ["websocket"],
+    const wsHost = apiHost.replace(/\/api\/?$/i, '');
+    socket = io(wsHost, {
+        path: "/socket.io",
+        transports: ['websocket'],
         auth: {
             token: "local"
         }
