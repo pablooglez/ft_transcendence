@@ -24,3 +24,32 @@ export const registerSchema = {
     }
   }
 };
+
+export const usernameChangerSchema = {
+  body: {
+    type: "object",
+    required: ["newUsername"],
+    properties: {
+      newUsername: {
+        type: "string",
+        minLength: 3,
+        maxLength: 10
+      }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        result: { type: 'string' }
+      }
+    },
+    400: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' }
+      }
+    }
+  }
+};

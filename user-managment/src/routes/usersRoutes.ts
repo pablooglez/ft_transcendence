@@ -31,16 +31,16 @@ import {
 } from "../controllers/friendsController";
 
 import { 
-  registerSchema 
+  registerSchema,
+  usernameChangerSchema
 } from "../schemas/userSchemas";
 
 export default async (fastify: FastifyInstance) => {
-    //fastify.post("/register", registerController);
     fastify.post("/register", { schema: registerSchema, handler: registerController });
     fastify.post("/register42", register42Controller);
     fastify.post("/loginTime", loginTimeRegister)
     fastify.get("/me", getCurrentUserController);
-    fastify.post("/changeUsername", usernameChanger);
+    fastify.post("/changeUsername", { schema: usernameChangerSchema, handler: usernameChanger });
     fastify.post("/changeEmail", emailChanger);
     fastify.post("/checkPassword", passwordControl);
     fastify.post("/changePassword", passwordChanger);
