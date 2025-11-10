@@ -157,11 +157,16 @@ function cleanup() {
         socket.disconnect();
         socket = null;
     }
-    // Ensure powerup is disabled when cleaning up a local room
+    // Ensure powerup is disabled when cleaning up a non-local room only
     try {
-        postGame(`/game/${roomId}/powerup?enabled=false`).catch(() => {});
+        if (!String(roomId).startsWith("local_")) {
+            console.debug(`[LocalPong] cleanup: disabling powerup for ${roomId}`);
+            postGame(`/game/${roomId}/powerup?enabled=false`).catch((err) => { console.debug('[LocalPong] cleanup: powerup disable failed', err); });
+        } else {
+            console.debug(`[LocalPong] cleanup: skipping powerup disable for local room ${roomId}`);
+        }
     } catch (e) {
-        /* ignore */
+        console.debug('[LocalPong] cleanup: unexpected error while disabling powerup', e);
     }
     if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
@@ -184,18 +189,21 @@ function cleanup() {
 // Helper: POST with Authorization header and one retry after token refresh
 async function postGame(path: string): Promise<Response> {
     const makeReq = async () => {
+        console.debug(`[LocalPong][HTTP POST] request -> ${apiHost}${path}`);
         const token = getAccessToken();
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
         return fetch(`${apiHost}${path}`, { method: "POST", headers });
     };
     let res = await makeReq();
+    console.debug(`[LocalPong][HTTP POST] initial response -> ${res.status} ${path}`);
     if (res.status === 401) {
         const refreshed = await refreshAccessToken();
         if (refreshed) {
             res = await makeReq();
         }
     }
+    console.debug(`[LocalPong][HTTP POST] final response -> ${res.status} ${path}`);
     return res;
 }
 
@@ -223,6 +231,7 @@ async function applySpeedsToRoom(roomIdToSet: string) {
     // Only post if body has at least one property
     if (Object.keys(body).length === 0) return;
     try {
+        console.debug('[LocalPong] applySpeedsToRoom', roomIdToSet, body);
         await postGameJson(`/game/${roomIdToSet}/speeds`, body);
     } catch (e) {
         console.warn('Failed to set speeds for room', roomIdToSet, e);
@@ -310,7 +319,8 @@ async function startGame(isAiMode: boolean) {
         // If there’s a previous socket, clean it up
         cleanup();
     }
-    socket = io(apiHost, { 
+    const wsHost = apiHost.replace(/\/api\/?$/i, '');
+    socket = io(wsHost, {
         path: "/socket.io",
         transports: ['websocket'],
         auth: {
@@ -324,96 +334,109 @@ async function startGame(isAiMode: boolean) {
     socket!.on('connect', async () => {
         console.log(`[LocalPong] Socket connected, joining room '${roomId}'`);
         socket!.emit("joinRoom", { roomId });
+        console.debug('[LocalPong] emitted joinRoom', { roomId });
 
-        try {
-            // (no AI start/stop here for local UI behavior)
-            const initResponse = await postGame(`/game/${roomId}/init`);
-            if (!initResponse.ok) {
-                throw new Error(`init failed (${initResponse.status})`);
-            }
-            // Apply any custom speeds from UI after init (init resets state)
-            await applySpeedsToRoom(roomId);
-
-            // Enable powerup for this local room (speed increases on paddle hit)
+        // Wait for the server to confirm we've joined the room (avoids racing with HTTP calls)
+        socket!.once('roomJoined', async (payload: { roomId: string, role?: string }) => {
+            console.debug('[LocalPong] socket roomJoined payload', payload);
+            const rId = payload?.roomId ?? roomId;
             try {
-                await postGame(`/game/${roomId}/powerup?enabled=true`);
-            } catch (e) {
-                console.warn('[LocalPong] Failed to enable powerup for room', roomId, e);
-            }
+                // (no AI start/stop here for local UI behavior)
+                const initResponse = await postGame(`/game/${rId}/init`);
+                if (!initResponse.ok) {
+                    throw new Error(`init failed (${initResponse.status})`);
+                }
+                // Apply any custom speeds from UI after init (init resets state)
+                await applySpeedsToRoom(rId);
 
-            // The game starts paused by default after init. Use a 3-2-1 countdown then resume.
-            import("../utils/countdown").then(mod => {
-                mod.runCountdown('countdown', 3).then(async () => {
-                    const resumeResponse = await postGame(`/game/${roomId}/resume`);
-                    if (!resumeResponse.ok) throw new Error(`resume failed (${resumeResponse.status})`);
-                    isGameRunning = true;
-                    console.log("[LocalPong] Game started and resumed after countdown.");
+                // Enable powerup for this local room (speed increases on paddle hit)
+                try {
+                    await postGame(`/game/${rId}/powerup?enabled=true`);
+                } catch (e) {
+                    console.warn('[LocalPong] Failed to enable powerup for room', rId, e);
+                }
 
-                    // Pause on tab visibility change (do not auto-resume)
-                    handleVisibility = () => {
-                        if (document.hidden) {
-                            if (isGameRunning) {
-                                // Pause locally and inform server
-                                postGame(`/game/${roomId}/pause`).catch(() => {});
+                // The game starts paused by default after init. Use a 3-2-1 countdown then resume.
+                import("../utils/countdown").then(mod => {
+                    mod.runCountdown('countdown', 3).then(async () => {
+                        const resumeResponse = await postGame(`/game/${rId}/resume`);
+                        if (!resumeResponse.ok) throw new Error(`resume failed (${resumeResponse.status})`);
+                        isGameRunning = true;
+                        console.log("[LocalPong] Game started and resumed after countdown.");
+
+                        // Pause on tab visibility change (do not auto-resume)
+                        handleVisibility = () => {
+                            if (document.hidden) {
+                                if (isGameRunning) {
+                                    // Pause locally and inform server
+                                    postGame(`/game/${rId}/pause`).catch(() => {});
+                                }
+                            }
+                        };
+                        document.addEventListener('visibilitychange', handleVisibility);
+
+                        // Ensure we disable powerup when leaving the page and disconnect cleanly
+                        beforeUnloadHandler = () => {
+                            try {
+                                if (aiStarted) {
+                                    navigator.sendBeacon(`${apiHost}/game/${rId}/stop-ai`);
+                                }
+                                if (!String(rId).startsWith("local_")) {
+                                    navigator.sendBeacon(`${apiHost}/game/${rId}/powerup?enabled=false`);
+                                }
+                            } catch (e) {}
+                            if (socket) socket.disconnect();
+                        };
+                        window.addEventListener('beforeunload', beforeUnloadHandler);
+
+                        // If playing vs AI, request the backend to start the AI opponent
+                        if (isAiMode) {
+                            try {
+                                const startAiResponse = await postGame(`/game/${rId}/start-ai`);
+                                if (startAiResponse.ok) {
+                                    aiStarted = true;
+                                } else {
+                                    console.warn(`[LocalPong] start-ai failed (${startAiResponse.status})`);
+                                }
+                            } catch (e) {
+                                console.warn('[LocalPong] Failed to start AI for room', rId, e);
                             }
                         }
-                    };
-                    document.addEventListener('visibilitychange', handleVisibility);
 
-                    // Ensure we disable powerup when leaving the page and disconnect cleanly
-                    beforeUnloadHandler = () => {
-                        try {
-                            if (aiStarted) {
-                                navigator.sendBeacon(`${apiHost}/game/${roomId}/stop-ai`);
-                            }
-                            navigator.sendBeacon(`${apiHost}/game/${roomId}/powerup?enabled=false`);
-                        } catch (e) {}
-                        if (socket) socket.disconnect();
-                    };
-                    window.addEventListener('beforeunload', beforeUnloadHandler);
+                        // Habilita los botones de nuevo tras iniciar
+                        if (btn1v1) btn1v1.disabled = false;
+                        if (btn1vAI) btn1vAI.disabled = false;
 
-                    // If playing vs AI, request the backend to start the AI opponent
-                    if (isAiMode) {
-                        try {
-                            const startAiResponse = await postGame(`/game/${roomId}/start-ai`);
-                            if (startAiResponse.ok) {
-                                aiStarted = true;
-                            } else {
-                                console.warn(`[LocalPong] start-ai failed (${startAiResponse.status})`);
-                            }
-                        } catch (e) {
-                            console.warn('[LocalPong] Failed to start AI for room', roomId, e);
-                        }
-                    }
-
-                    // Habilita los botones de nuevo tras iniciar
-                    if (btn1v1) btn1v1.disabled = false;
-                    if (btn1vAI) btn1vAI.disabled = false;
-
-                    // Start the animation loop
-                    gameLoop(isAiMode);
+                        // Start the animation loop
+                        gameLoop(isAiMode);
+                    });
                 });
-            });
 
-        } catch (error: any) {
-            console.error("[LocalPong] Failed to start game:", error);
-            const errorMsg = document.getElementById("errorMessage");
-            if (errorMsg) {
-                errorMsg.textContent = error?.message || "Error al iniciar la partida";
-                errorMsg.style.display = "block";
+            } catch (error: any) {
+                console.error("[LocalPong] Failed to start game:", error);
+                const errorMsg = document.getElementById("errorMessage");
+                if (errorMsg) {
+                    errorMsg.textContent = error?.message || "Error al iniciar la partida";
+                    errorMsg.style.display = "block";
+                }
+                // Habilita los botones para reintentar
+                if (btn1v1) btn1v1.disabled = false;
+                if (btn1vAI) btn1vAI.disabled = false;
             }
-            // Habilita los botones para reintentar
-            if (btn1v1) btn1v1.disabled = false;
-            if (btn1vAI) btn1vAI.disabled = false;
-        }
+        });
     });
 
     socket!.on("gameState", (state: GameState) => {
+        console.debug('[LocalPong] received gameState', { left: state.scores.left, right: state.scores.right, gameEnded: state.gameEnded });
         gameState = state;
         draw();
         if (state.gameEnded) {
             checkWinner();
         }
+    });
+
+    socket!.on('gameReady', (payload: { roomId: string }) => {
+        console.debug('[LocalPong] gameReady', payload);
     });
 
     socket!.on('roomFull', (payload: { roomId: string }) => {

@@ -342,13 +342,16 @@ function prepareGameUI() {
 // New helper to fetch and render only public rooms
 async function loadPublicRooms() {
     try {
+        console.log('[DEBUG] loadPublicRooms: Fetching rooms...');
         // GET /game/rooms?public=true via gateway
         const res = await postApi("/game/rooms?public=true", "GET");
+        console.log('[DEBUG] loadPublicRooms: Response status:', res.status);
         if (!res.ok) {
             console.warn("Failed fetching rooms:", res.status);
             return;
         }
         const rooms = await res.json();
+        console.log('[DEBUG] loadPublicRooms: Rooms received:', rooms);
         const ul = document.getElementById("roomsList") as HTMLUListElement;
         if (!ul) return;
         ul.innerHTML = "";
@@ -361,10 +364,12 @@ async function loadPublicRooms() {
             // server room object shape: { id, state, players }
             const id = r.id ?? r.roomId ?? r.id;
             const playersCount = (r.players || []).length;
+            console.log('[DEBUG] loadPublicRooms: Room', id, 'has', playersCount, 'players');
             li.textContent = `${id} (${playersCount} players) `;
             const btn = document.createElement("button");
             btn.textContent = "Join";
             btn.addEventListener("click", () => {
+                console.log('[DEBUG] Joining room:', id);
                 roomId = id;
                 isRoomCreator = false;
                 prepareGameUI();
@@ -379,14 +384,22 @@ async function loadPublicRooms() {
 }
 
 function startGame(roomIdToJoin: string) {
+    console.log('[DEBUG] startGame called with roomId:', roomIdToJoin);
     // Connect to the gateway, which will proxy to the pong service
-    socket = io(apiHost, {
-        path: "/socket.io/", // Ensure the path matches the gateway proxy
+
+    const wsHost = apiHost.replace(/\/api\/?$/i, '');
+    socket = io(wsHost, {
+        path: "/socket.io",
+        transports: ["websocket"],
+        auth: {
+            token: getAccessToken(),
+        },
     });
 
     document.getElementById("roleInfo")!.textContent = `Joining room ${roomIdToJoin}...`;
     
     socket.on('connect', () => {
+        console.log('[DEBUG] Socket connected successfully');
         // Prefer sending authenticated user id when available so server can persist user_ids
         const userId = getUserIdFromToken() || (() => {
             const userStr = localStorage.getItem('user');
@@ -395,11 +408,17 @@ function startGame(roomIdToJoin: string) {
         })();
         const payload: any = { roomId: roomIdToJoin };
         if (typeof userId !== 'undefined' && userId !== null) payload.userId = userId;
+        console.log('[DEBUG] Emitting joinRoom with payload:', payload);
         socket.emit("joinRoom", payload);
         setupPresenceHooks();
     });
 
+    socket.on('connect_error', (err) => {
+        console.error('[DEBUG] Socket connect error:', err);
+    });
+
     socket.on("roomJoined", (data: { roomId: string, role: "left" | "right" }) => {
+        console.log('[DEBUG] Received roomJoined:', data);
         roomId = data.roomId;
         playerRole = data.role;
 
@@ -417,6 +436,7 @@ function startGame(roomIdToJoin: string) {
     });
 
     socket.on('roomFull', (payload: { roomId:string }) => {
+        console.log('[DEBUG] Received roomFull:', payload);
         alert(`Room ${payload.roomId} is full. Try another room or create a new one.`);
         // Optionally, reset the UI
         (document.getElementById("pong-lobby")!).style.display = "block";
@@ -425,6 +445,7 @@ function startGame(roomIdToJoin: string) {
     });
 
     socket.on('roomNotFound', (payload: { roomId: string }) => {
+        console.log('[DEBUG] Received roomNotFound:', payload);
         alert(`Room ${payload.roomId} not found. Please check the ID and try again.`);
         // Optionally, reset the UI
         (document.getElementById("pong-lobby")!).style.display = "block";
@@ -433,6 +454,7 @@ function startGame(roomIdToJoin: string) {
     });
 
     socket.on("gameReady", (data: { roomId: string }) => {
+        console.log('[DEBUG] Received gameReady:', data);
         document.getElementById("roleInfo")!.textContent = `Room ${data.roomId} is ready. Opponent found!`;
         
         // Only initialize the game once per room to avoid conflicts
@@ -482,6 +504,7 @@ function startGame(roomIdToJoin: string) {
     });
 
     socket.on("gameState", (state: GameState) => {
+        console.log('[DEBUG] Received gameState:', state);
         gameState = state;
         draw();
         if (state.gameEnded) {
@@ -490,10 +513,12 @@ function startGame(roomIdToJoin: string) {
     });
 
     socket.on("gamePaused", ({ paused }: { paused: boolean }) => {
+        console.log('[DEBUG] Received gamePaused:', paused);
         isGameRunning = !paused;
     });
 
     socket.on("gameStarting", () => {
+        console.log('[DEBUG] Received gameStarting');
         // Start countdown for all players when game is about to start
         import("../utils/countdown").then(mod => {
             mod.runCountdown('countdown', 1).then(() => {
@@ -523,7 +548,7 @@ function startGame(roomIdToJoin: string) {
     });
 
     socket.on("disconnect", (reason: string) => {
-        console.log("[RemotePong] Socket disconnected.", reason);
+        console.log("[DEBUG] Socket disconnected with reason:", reason);
         isGameRunning = false;
         const roleInfo = document.getElementById("roleInfo");
         if (roleInfo) roleInfo.textContent = 'Conexión perdida con el servidor. La partida se reiniciará.';
