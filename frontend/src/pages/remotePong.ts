@@ -207,14 +207,12 @@ async function registerMatchToPongService(winnerSide: "left" | "right", score: {
 
         const res = await postApiJson(`/game/matches`, body);
         if (!res.ok) {
-            console.error('[RemotePong] Failed to register match:', res.status, await res.text());
             return null;
         }
         const data = await res.json();
         matchRecorded = true;
         return data.matchId || null;
     } catch (err) {
-        console.error('[RemotePong] Error registering match:', err);
         return null;
     }
 }
@@ -314,7 +312,6 @@ export function remotePongHandlers() {
             prepareGameUI();
             startGame(newRoomId);
         } catch (error) {
-            console.error("Error creating room:", error);
             alert("Could not create room. Please try again.");
         }
     });
@@ -373,7 +370,6 @@ async function loadPublicRooms() {
             ul.appendChild(li);
         });
     } catch (err: any) {
-        console.error("Error loading public rooms:", err);
     }
 }
 
@@ -405,7 +401,6 @@ function startGame(roomIdToJoin: string) {
     });
 
     socket.on('connect_error', (err) => {
-        console.error('[DEBUG] Socket connect error:', err);
     });
 
     socket.on("roomJoined", (data: { roomId: string, role: "left" | "right" }) => {
@@ -520,7 +515,7 @@ function startGame(roomIdToJoin: string) {
                     left: gameState.scores.left,
                     right: gameState.scores.right
                 }).catch(e => console.warn('Failed to register match on disconnect:', e));
-                sendVictoryToUserManagement().catch(err => console.error('Failed to send victory:', err));
+                sendVictoryToUserManagement().catch(() => {});
             }
         } 
         catch (e) {
@@ -640,10 +635,10 @@ function checkWinner() {
                     }
                 }).catch((e) => console.warn('Failed to register match', e));
 
-            sendVictoryToUserManagement().catch(err => console.error('Failed to send victory:', err));
+            sendVictoryToUserManagement().catch(() => {});
         } else {
             // local player lost — record a defeat as well (but don't register match)
-            sendDefeatToUserManagement().catch(err => console.error('Failed to send defeat:', err));
+            sendDefeatToUserManagement().catch(() => {});
         }
     }
     endGame();
@@ -671,11 +666,9 @@ async function sendVictoryToUserManagement() {
         const res = await postApiJson(`/users/addVictory`, { userId });
         if (!res.ok) {
             const text = await res.text();
-            console.error("Failed to post victory:", res.status, text);
         } else {
         }
     } catch (err) {
-        console.error("Error sending victory:", err);
     }
 }
 
@@ -699,11 +692,9 @@ async function sendDefeatToUserManagement() {
         const res = await postApiJson(`/users/addDefeat`, { userId });
         if (!res.ok) {
             const text = await res.text();
-            console.error("Failed to post defeat:", res.status, text);
         } else {
         }
     } catch (err) {
-        console.error("Error sending defeat:", err);
     }
 }
 

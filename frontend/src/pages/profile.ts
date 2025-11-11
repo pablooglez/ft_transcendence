@@ -96,7 +96,6 @@ export function profileHandlers() {
   
   // Early return if no access token
   if (!accessToken) {
-    console.error('No access token available');
     return;
   }
   
@@ -152,7 +151,6 @@ export function profileHandlers() {
           const data = await fetchCurrentUser(token);
           userData = data?.user ?? null;
         } catch (e) {
-          console.error('[Profile] fetchCurrentUser failed', e);
           window.location.hash = '#/login';
           return;
         }
@@ -189,7 +187,6 @@ export function profileHandlers() {
       // Fetch friends and render (call user-management endpoint directly)
       await fetchAndRenderFriends(userId, token);
     } catch (err: any) {
-      console.error("Error fetching user data:", err);
       if (usernameField) {
         usernameField.textContent = `Error: ${err.message}`;
       }
@@ -389,7 +386,6 @@ export function profileHandlers() {
         historyContainer.innerHTML = '<p>No matches found.</p>';
       }
     } catch (err) {
-      console.error("Error fetching stats/history:", err);
       statsContainer.innerHTML = '<p>Error loading stats.</p>';
       historyContainer.innerHTML = '<p>Error loading history.</p>';
     }

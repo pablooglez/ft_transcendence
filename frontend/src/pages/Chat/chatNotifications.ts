@@ -273,7 +273,6 @@ export async function loadNotificationsAuto() {
                 await deleteNotification(notificationId);
                 item.remove();
               } catch (err) {
-                console.error('❌ Error deleting notification:', err);
               }
             });
           }

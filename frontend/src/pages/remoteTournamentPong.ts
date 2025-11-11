@@ -206,7 +206,6 @@ async function loadMatchInfo(matchIdParam: number) {
         // Start game directly
         startGame(match.roomId);
     } catch (error) {
-        console.error("Error loading match info:", error);
         alert("Failed to load match information");
     }
 }
@@ -349,9 +348,9 @@ function checkWinner() {
     if (!resultRecorded) {
         resultRecorded = true;
         if (playerRole === winnerSide) {
-            sendVictoryToUserManagement().catch(err => console.error('Failed to send victory:', err));
+            sendVictoryToUserManagement().catch(() => {});
         } else {
-            sendDefeatToUserManagement().catch(err => console.error('Failed to send defeat:', err));
+            sendDefeatToUserManagement().catch(() => {});
         }
     }
 
@@ -398,11 +397,9 @@ async function sendDefeatToUserManagement() {
         const res = await postApiJson(`/users/addDefeat`, { userId });
         if (!res.ok) {
             const text = await res.text();
-            console.error("Failed to post defeat:", res.status, text);
         } else {
         }
     } catch (err) {
-        console.error("Error sending defeat:", err);
     }
 }
 
@@ -426,11 +423,9 @@ async function sendVictoryToUserManagement() {
         const res = await postApiJson(`/users/addVictory`, { userId });
         if (!res.ok) {
             const text = await res.text();
-            console.error("Failed to post victory:", res.status, text);
         } else {
         }
     } catch (err) {
-        console.error("Error sending victory:", err);
     }
 }
 
@@ -452,13 +447,11 @@ async function reportMatchResult(matchId: number, winnerId: number) {
         });
         if (!response.ok) throw new Error("Failed to report match result");
     } catch (error) {
-        console.error("Error reporting match result:", error);
     }
 }
 
 async function handleTournamentMatchEnd(matchId: number, winnerId: number, isWinner: boolean) {
     if (!winnerId) {
-        console.error("Winner ID is null, cannot handle tournament end");
         return;
     }
     try {
@@ -473,7 +466,6 @@ async function handleTournamentMatchEnd(matchId: number, winnerId: number, isWin
         });
         
         if (!matchResponse.ok) {
-            console.error("Failed to get match details");
             return;
         }
         
@@ -500,7 +492,6 @@ async function handleTournamentMatchEnd(matchId: number, winnerId: number, isWin
                 // Go back to tournament list
                 window.location.hash = `#/tournament`;
             } else {
-                console.error("Failed to leave tournament");
                 window.location.hash = `#/tournament`;
             }
         }
@@ -509,7 +500,6 @@ async function handleTournamentMatchEnd(matchId: number, winnerId: number, isWin
         cleanup();
         
     } catch (error) {
-        console.error("Error handling tournament match end:", error);
         // Fallback: go back to tournament page
         window.location.hash = `#/tournament`;
         cleanup();

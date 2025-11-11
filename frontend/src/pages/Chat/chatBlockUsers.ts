@@ -18,7 +18,6 @@ export async function fetchBlockedUsers() {
         setBlockedUsers(blockedUsersSet);
         return blockedUsersSet;
     } catch (err) {
-        console.error("Failed to fetch blocked users:", err);
         throw err;
     }
 }

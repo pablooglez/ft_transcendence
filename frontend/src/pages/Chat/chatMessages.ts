@@ -75,7 +75,6 @@ export async function sendMessage(recipientId: number, content: string) {
         }
         return await res.json();
     } catch (err) {
-        // console.error("Failed to send message:", err); // Removed to avoid console logs
         throw err;
     }
 }
@@ -153,7 +152,6 @@ export const handleMessageFormSubmit = async (e: Event) => {
         // Clear form
         messageContentInput.value = '';
     } catch (error) {
-        // console.error('Error sending message:', error); // Removed to avoid console logs
         let errorMsg = '❌ Error sending message';
         if (error instanceof Error && error.message.includes('400')) {
             errorMsg = 'You cannot send messages to this user because they are blocked.';

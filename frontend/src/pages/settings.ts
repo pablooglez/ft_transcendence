@@ -142,10 +142,8 @@ export function settingsHandlers(accessToken: string) {
         });
         avatarField.innerHTML = `<img src="${URL.createObjectURL(await avatarIMG.blob())}" alt="User Avatar" width="100" height="100"/>`;
       } else {
-        console.error("Error fetching user data:", data);
       }
     } catch (err) {
-      console.error("⚠️ Failed to reach server", err);
     }
   }
 
@@ -198,11 +196,9 @@ export function settingsHandlers(accessToken: string) {
         location.reload();
       } 
       else {
-        console.error("Error changing username:", data.error);
       }
     } 
     catch (err) {
-      console.error("⚠️ Failed to reach server", err);
     }
   });
 
@@ -252,11 +248,9 @@ export function settingsHandlers(accessToken: string) {
         location.reload();
       }
       else {
-        console.error("Error changing email:", data.error);
       }
     }
     catch (err) {
-      console.error("⚠️ Failed to reach server", err);
     }
   });
 
@@ -358,7 +352,6 @@ export function settingsHandlers(accessToken: string) {
       });
     } 
     catch (err) {
-      console.error("⚠️ Failed to reach server", err);
     }
     location.reload();
   });
