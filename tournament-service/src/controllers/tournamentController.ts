@@ -5,7 +5,33 @@ import { PlayerRepository } from "../repositories/playerRepository";
 import { TournamentRepository } from "../repositories/tournamentRepository";
 import jwt from 'jsonwebtoken';
 
-export async function getTournamentsController(req: FastifyRequest, reply: FastifyReply) {
+import { Tournament,
+         GetTournamentByIdParams, 
+         CreateLocalTournamentBody, 
+         StartTournamentParams, 
+         StartRemoteTournamentParams,
+         AdvanceTournamentParams,
+         AdvanceTournamentBody,
+         CreateRemoteTournamentBody,
+         CreateRemoteTournamentHeaders,
+         JoinTournamentHeaders,
+         JoinTournamentParams,
+         LeaveTournamentHeaders,
+         LeaveTournamentParams,
+         UpdateMatchResultParams,
+         UpdateMatchResultBody,
+         GetTournamentPlayersResponse,
+         GetTournamentPlayersParams,
+         GetTournamentMatchesWithRoomsParams,
+         GetTournamentMatchesWithRoomsResponse,
+         GetMatchByIdParams,
+         GetMatchByIdResponse,
+         UpdateMatchRoomParams,
+         UpdateMatchRoomBody,
+         UpdateMatchRoomResponse,
+         } from "../schemas/tournamentSchemas";
+
+export async function getTournamentsController(req: FastifyRequest, reply: FastifyReply): Promise<Tournament[]> {
     try {
         const tournaments = await TournamentService.getAllTournaments();
         return reply.send(tournaments);
@@ -14,9 +40,9 @@ export async function getTournamentsController(req: FastifyRequest, reply: Fasti
     }
 }
 
-export async function getTournamentByIdController(req: FastifyRequest, reply: FastifyReply) {
+export async function getTournamentByIdController(req: FastifyRequest<{ Params: GetTournamentByIdParams }>, reply: FastifyReply) {
     try {
-        const { id } = req.params as { id: string };
+        const { id } = req.params;
         const tournament = await TournamentService.getTournamentById(Number(id));
         return reply.send(tournament);
         
@@ -25,9 +51,9 @@ export async function getTournamentByIdController(req: FastifyRequest, reply: Fa
     }
 }
 
-export async function createLocalTournamentController(req: FastifyRequest, reply: FastifyReply) {
+export async function createLocalTournamentController(req: FastifyRequest<{ Body: CreateLocalTournamentBody }>, reply: FastifyReply) {
     try {
-        const { tournamentName, tournamentPlayers, playerOne, playerTwo, playerThree, playerFour } = req.body as any;
+        const { tournamentName, tournamentPlayers, playerOne, playerTwo, playerThree, playerFour } = req.body;
 
         // Validate tournament name length
         if (!tournamentName || typeof tournamentName !== 'string') {
@@ -71,9 +97,9 @@ export async function createLocalTournamentController(req: FastifyRequest, reply
     }
 }
 
-export async function startTournamentController(req: FastifyRequest, reply: FastifyReply) {
+export async function startTournamentController(req: FastifyRequest<{ Params: StartTournamentParams }>, reply: FastifyReply) {
     try {
-        const { id } = req.params as { id: string };
+        const { id } = req.params;
         const tournamentData = await TournamentService.startTournament(Number(id));
         return reply.code(200).send(tournamentData);
         
@@ -82,9 +108,9 @@ export async function startTournamentController(req: FastifyRequest, reply: Fast
     }
 }
 
-export async function startRemoteTournamentController(req: FastifyRequest, reply: FastifyReply) {
+export async function startRemoteTournamentController(req: FastifyRequest<{ Params: StartRemoteTournamentParams }>, reply: FastifyReply) {
     try {
-        const { id } = req.params as { id: string };
+        const { id } = req.params;
         const tournamentData = await TournamentService.startRemoteTournament(Number(id));
         return reply.code(200).send(tournamentData);
         
@@ -93,10 +119,10 @@ export async function startRemoteTournamentController(req: FastifyRequest, reply
     }
 }
 
-export async function advanceTournamentController(req: FastifyRequest, reply: FastifyReply) {
+export async function advanceTournamentController(req: FastifyRequest<{ Params: AdvanceTournamentParams; Body: AdvanceTournamentBody }>, reply: FastifyReply) {
     try {
-        const { id } = req.params as { id: string };
-        const { winners } = req.body as { winners: { id: number; username: string }[] };
+        const { id } = req.params;
+        const { winners } = req.body;
         // If tournament is remote, use remote-specific advance which creates remote matches
         const tournament = TournamentRepository.getById(Number(id));
         let data;
@@ -114,7 +140,7 @@ export async function advanceTournamentController(req: FastifyRequest, reply: Fa
     }
 }
 
-export async function createRemoteTournamentController(req: FastifyRequest, reply: FastifyReply) {
+export async function createRemoteTournamentController(req: FastifyRequest<{ Headers: CreateRemoteTournamentHeaders; Body: CreateRemoteTournamentBody }>, reply: FastifyReply) {
     try {
 
     	const userId = req.headers["x-user-id"];
@@ -125,7 +151,7 @@ export async function createRemoteTournamentController(req: FastifyRequest, repl
 	        return reply.code(401).send({ error: "Not authenticated" });
         }
 
-        const { tournamentName, tournamentPlayers } = req.body as any;
+        const { tournamentName, tournamentPlayers } = req.body;
 
         // Validate tournament name length
         if (!tournamentName || typeof tournamentName !== 'string') {
@@ -148,11 +174,11 @@ export async function createRemoteTournamentController(req: FastifyRequest, repl
     }
 }
 
-export async function joinTournamentController(req: FastifyRequest, reply: FastifyReply) {
+export async function joinTournamentController(req: FastifyRequest<{ Headers: JoinTournamentHeaders; Params: JoinTournamentParams }>, reply: FastifyReply) {
     try {
-        const { id } = req.params as { id: string };
-    	const userId = req.headers["x-user-id"] as string;
-        const username = req.headers["x-username"] as string;
+        const { id } = req.params;
+    	const userId = req.headers["x-user-id"];
+        const username = req.headers["x-username"];
 
         if (!userId || !username) {
             console.log("❌ Missing user headers, not authenticated");
@@ -169,11 +195,11 @@ export async function joinTournamentController(req: FastifyRequest, reply: Fasti
     }
 }
 
-export async function leaveTournamentController(req: FastifyRequest, reply: FastifyReply) {
+export async function leaveTournamentController(req: FastifyRequest<{ Headers: LeaveTournamentHeaders; Params: LeaveTournamentParams }>, reply: FastifyReply) {
     try {
-        const { id } = req.params as { id: string };
-    	const userId = req.headers["x-user-id"] as string;
-        const username = req.headers["x-username"] as string;
+        const { id } = req.params;
+    	const userId = req.headers["x-user-id"];
+        const username = req.headers["x-username"];
 
         if (!userId || !username) {
             console.log("Missing user headers, not authenticated");
@@ -191,10 +217,10 @@ export async function leaveTournamentController(req: FastifyRequest, reply: Fast
     }
 }
 
-export async function updateMatchResultController(req: FastifyRequest, reply: FastifyReply) {
+export async function updateMatchResultController(req: FastifyRequest<{ Params: UpdateMatchResultParams; Body: UpdateMatchResultBody }>, reply: FastifyReply) {
     try {
-        const { matchId } = req.params as { matchId: string };
-        const { winnerId } = req.body as { winnerId: number };
+        const { matchId } = req.params;
+        const { winnerId } = req.body;
 
         if (!winnerId) {
             return reply.code(400).send({ error: "winnerId is required" });
@@ -287,9 +313,9 @@ export async function updateMatchResultController(req: FastifyRequest, reply: Fa
     }
 }
 
-export async function getTournamentPlayersController(req: FastifyRequest, reply: FastifyReply) {
+export async function getTournamentPlayersController(req: FastifyRequest<{ Params: GetTournamentPlayersParams  }>, reply: FastifyReply): Promise<GetTournamentPlayersResponse | { error: string }> {
     try {
-        const { id } = req.params as { id: string };
+        const { id } = req.params;
         const tournamentId = Number(id);
 
         const players = PlayerRepository.getByTournamentId(tournamentId);
@@ -300,9 +326,9 @@ export async function getTournamentPlayersController(req: FastifyRequest, reply:
     }
 }
 
-export async function getTournamentMatchesWithRoomsController(req: FastifyRequest, reply: FastifyReply) {
+export async function getTournamentMatchesWithRoomsController(req: FastifyRequest<{ Params: GetTournamentMatchesWithRoomsParams }>, reply: FastifyReply): Promise<GetTournamentMatchesWithRoomsResponse | { error: string } | { message: string }> {
     try {
-        const { id } = req.params as { id: string };
+        const { id } = req.params;
         const matches = await TournamentService.getTournamentMatchesWithRooms(Number(id));
         
         if (!matches || matches.length === 0) {
@@ -316,9 +342,9 @@ export async function getTournamentMatchesWithRoomsController(req: FastifyReques
     }
 }
 
-export async function getMatchByIdController(req: FastifyRequest, reply: FastifyReply) {
+export async function getMatchByIdController(req: FastifyRequest <{ Params: GetMatchByIdParams }>, reply: FastifyReply): Promise<GetMatchByIdResponse | { message: string } | { error: string }> {
     try {
-        const { matchId } = req.params as { matchId: string };
+        const { matchId } = req.params;
         const match = TournamentRepository.getMatchById(Number(matchId));
         
         if (!match) {
@@ -332,10 +358,10 @@ export async function getMatchByIdController(req: FastifyRequest, reply: Fastify
     }
 }
 
-export async function updateMatchRoomController(req: FastifyRequest, reply: FastifyReply) {
+export async function updateMatchRoomController(req: FastifyRequest <{ Params: UpdateMatchRoomParams, Body: UpdateMatchRoomBody }>, reply: FastifyReply): Promise<UpdateMatchRoomResponse | { error: string }> {
     try {
-        const { matchId } = req.params as { matchId: string };
-        const { roomId } = req.body as { roomId: string };
+        const { matchId } = req.params;
+        const { roomId } = req.body;
 
         if (!roomId) {
             return reply.code(400).send({ error: "roomId is required" });

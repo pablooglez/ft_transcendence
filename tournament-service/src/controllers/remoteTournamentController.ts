@@ -4,10 +4,12 @@ import { PlayerRepository } from "../repositories/playerRepository";
 import { TournamentRepository } from "../repositories/tournamentRepository";
 import jwt from "jsonwebtoken";
 
-export async function updateRemoteMatchResultController(req: FastifyRequest, reply: FastifyReply) {
+import { UpdateMatchResultBody, UpdateMatchResultParams } from "../schemas/tournamentSchemas";
+
+export async function updateRemoteMatchResultController(req: FastifyRequest<{ Params: UpdateMatchResultParams; Body: UpdateMatchResultBody }>, reply: FastifyReply) {
     try {
-        const { matchId } = req.params as { matchId: string };
-        const { winnerId } = req.body as { winnerId: number };
+        const { matchId } = req.params;
+        const { winnerId } = req.body;
 
         if (!winnerId) {
             return reply.code(400).send({ error: "winnerId is required" });
