@@ -7,8 +7,15 @@ export async function getResultsController(req: FastifyRequest, reply: FastifyRe
 
     try {
         const results = await getResults(id);
+
+        if (!results || !Array.isArray(results)) {
+            return reply.send([]);
+        }
         return reply.send(results);
     } catch (err: any) {
+        if (err && typeof err.message === 'string' && /not\s*found|no\s*results|empty/i.test(err.message)) {
+            return reply.send([]);
+        }
         return reply.code(400).send({ error: err.message });
     }
 }

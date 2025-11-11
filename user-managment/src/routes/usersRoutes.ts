@@ -33,31 +33,51 @@ import {
 import { 
   registerSchema,
   usernameChangerSchema,
-  addVictorySchema
+  addVictorySchema,
+  register42Schema,
+  loginTimeRegisterSchema,
+  emailChangerSchema,
+  passwordChangerControllerSchema,
+  passwordChangerSchema,
+  getAllUsersSchema,
+  userGetterByUsernameSchema,
+  userGetterByIdSchema,
+  userGetterByEmailSchema,
+  avatarGetterSchema,
+  avatarChangerSchema,
+  getResultsSchema,
+  addDefeatSchema,
+  getFriendSchema,
+  addFriendSchema,
+  removeFriendSchema,
+  checkFriendSchema,
+  removeUserSchema,
+  getCurrentUserSchema,
+  passwordControlSchema
 } from "../schemas/userSchemas";
 
 export default async (fastify: FastifyInstance) => {
     fastify.post("/register", { schema: registerSchema, handler: registerController });
-    fastify.post("/register42", register42Controller);
-    fastify.post("/loginTime", loginTimeRegister)
-    fastify.get("/me", getCurrentUserController);
+    fastify.post("/register42",{schema: register42Schema, handler: register42Controller}); //check
+    fastify.post("/loginTime",{schema: loginTimeRegisterSchema, handler: loginTimeRegister});
+    fastify.get("/me", {schema: getCurrentUserSchema, handler: getCurrentUserController});
     fastify.post("/changeUsername", { schema: usernameChangerSchema, handler: usernameChanger });
-    fastify.post("/changeEmail", emailChanger);
-    fastify.post("/checkPassword", passwordControl);
-    fastify.post("/changePassword", passwordChanger);
-    fastify.post("/changePasswordBackend", passwordChangerController);
-    fastify.get("/getAllUsers", getAllUsersController);
-    fastify.post("/getUserByName", userGetterByUsername);
-    fastify.post("/getUserById", userGetterById);
-    fastify.post("/getUserByEmail", userGetterByEmail);
-    fastify.get("/getAvatar", avatarGetterController);
-    fastify.post("/changeAvatar", avatarChanger);
-    fastify.get("/getResults", getResultsController);
+    fastify.post("/changeEmail", {schema: emailChangerSchema, handler: emailChanger});
+    fastify.post("/checkPassword", {schema: passwordControlSchema, handler: passwordControl});
+    fastify.post("/changePassword", {schema: passwordChangerSchema, handler: passwordChanger});
+    fastify.post("/changePasswordBackend", {schema: passwordChangerControllerSchema, handler: passwordChangerController});
+    fastify.get("/getAllUsers", {schema: getAllUsersSchema, handler: getAllUsersController});
+    fastify.post("/getUserByName", {schema: userGetterByUsernameSchema, handler: userGetterByUsername});
+    fastify.post("/getUserById", {schema: userGetterByIdSchema, handler: userGetterById});
+    fastify.post("/getUserByEmail", {schema: userGetterByEmailSchema, handler: userGetterByEmail});
+    fastify.get("/getAvatar", {schema: avatarGetterSchema, handler: avatarGetterController});
+    fastify.post("/changeAvatar", {schema: avatarChangerSchema, handler: avatarChanger});
+    fastify.get("/getResults", {schema: getResultsSchema, handler: getResultsController}    );
     fastify.post("/addVictory", { schema: addVictorySchema, handler: addVictoryController});
-    fastify.post("/addDefeat", addDefeatController);
-    fastify.get("/getFriends", getFriendController);
-    fastify.post("/addFriend", addFriendController);
-    fastify.post("/removeFriend", removeFriendController);
-    fastify.post("/checkFriend", checkFriendController);
-    fastify.delete("/removeUsers", removeUser)
+    fastify.post("/addDefeat", {schema: addDefeatSchema, handler: addDefeatController});
+    fastify.get("/getFriends", {schema: getFriendSchema, handler: getFriendController});
+    fastify.post("/addFriend", {schema: addFriendSchema, handler: addFriendController});
+    fastify.post("/removeFriend", {schema: removeFriendSchema, handler: removeFriendController});
+    fastify.post("/checkFriend", {schema: checkFriendSchema, handler: checkFriendController});
+    fastify.delete("/removeUsers", {schema: removeUserSchema, handler: removeUser});
 };

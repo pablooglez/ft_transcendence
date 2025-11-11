@@ -63,7 +63,8 @@ export async function loginTimeRegister(req: FastifyRequest, reply: FastifyReply
 	const { userId } = req.body as { userId: number };
 
 	try {
-		registerTime(userId);
+        await registerTime(userId);
+        return reply.send({ message: "Login time registered" });
 	} catch (err: any) {
 		console.error("Error occurred during username change:", err);
 		return reply.code(400).send({ error: err.message });
