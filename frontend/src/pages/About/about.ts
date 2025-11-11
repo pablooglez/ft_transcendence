@@ -40,6 +40,8 @@ export function aboutHandlers() {
     projectBtn?.addEventListener("click", () => {
         if (aboutContent) {
             aboutContent.innerHTML = getAboutProjectHTML();
+            if (moduleInfo)
+                moduleInfo.innerHTML = getMandatoryPartHTML();
             aboutHandlers();
         }
     })

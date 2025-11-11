@@ -326,7 +326,7 @@ async function startTournamentGame(isAiMode: boolean, playerLeft: string, player
         isGameRunning = false;
         const errorMsg = document.getElementById("errorMessage");
         if (errorMsg) {
-            errorMsg.textContent = 'Conexión perdida con el servidor. La partida se reiniciará.';
+            errorMsg.textContent = 'Game not found. Updating lobby.';
             errorMsg.style.display = "block";
         }
         cleanup();

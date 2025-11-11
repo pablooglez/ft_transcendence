@@ -521,6 +521,57 @@ export function getAboutProjectHTML() {
             <button id="serverPong-module-btn" class="module-btn">Server-Side Pong</button>
         </div>
         <div id="module-info" class="module-info">
+        <h1>Mandatory Part</h1>
+        <p class="about-group-description">
+            The mandatory part establishes the foundational structure and technical standards for the project.
+            It defines the core features, architectural requirements, and minimal security practices that every
+            implementation must follow before integrating optional modules.
+        </p>
+
+        <div class="modules-container">
+
+            <div class="module-card">
+                <h2 class="module-title">Single Page Application (SPA)</h2>
+                <p class="module-description">
+                    The project must run as a <strong>Single Page Application (SPA)</strong>, supporting standard browser
+                    navigation and full compatibility with the latest version of <strong>Mozilla Firefox</strong>.  
+                    No unhandled errors or warnings should appear in the console.
+                </p>
+            </div>
+
+            <div class="module-card">
+                <h2 class="module-title">Pong Game</h2>
+                <p class="module-description">
+                    The website’s main function is to host a live <strong>Pong game</strong> playable directly in the browser.
+                    Two players should be able to play locally on the same keyboard, while optional modules like
+                    <strong>Remote Players</strong> can enhance this functionality for online play.<br><br>
+                    The game must include:
+                    <ul class="module-description">
+                        <li class="module-description">A <strong>tournament system</strong> allowing multiple players to compete in sequence.</li>
+                        <li class="module-description">A <strong>matchmaking mechanism</strong> to organize rounds and display upcoming matches.</li>
+                        <li class="module-description">Uniform gameplay rules — all paddles and AI must share the same speed and behavior.</li>
+                        <li class="module-description">A <strong>registration system</strong> for alias-based participation, with optional persistent accounts if the <strong>User Management module</strong> is implemented.</li>
+                    </ul>
+                </p>
+            </div>
+
+            <div class="module-card">
+                <h2 class="module-title">Security Concerns</h2>
+                <p class="module-description">
+                    Security is a core aspect of the mandatory part. Regardless of module choice, all implementations must:
+                    <ul class="module-description">
+                        <li class="module-description"><strong>Hash all stored passwords</strong> to protect user credentials.</li>
+                        <li class="module-description">Prevent <strong>SQL injection</strong> and <strong>XSS</strong> vulnerabilities through proper input validation.</li>
+                        <li class="module-description">Use <strong>HTTPS</strong> (or <strong>WSS</strong> for WebSocket connections) to secure communication.</li>
+                        <li class="module-description">Implement <strong>form validation</strong> on both client and server sides.</li>
+                        <li class="module-description">Protect API routes and endpoints, ensuring that no sensitive data is exposed.</li>
+                    </ul>
+                    Even if the <strong>JWT Security</strong> or <strong>2FA</strong> module is not used, the project must still demonstrate
+                    responsible security practices in its base configuration.
+                </p>
+            </div>
+
+        </div>
         </div>
     `;
 }

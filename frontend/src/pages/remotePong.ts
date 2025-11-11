@@ -551,7 +551,7 @@ function startGame(roomIdToJoin: string) {
         console.log("[DEBUG] Socket disconnected with reason:", reason);
         isGameRunning = false;
         const roleInfo = document.getElementById("roleInfo");
-        if (roleInfo) roleInfo.textContent = 'Conexión perdida con el servidor. La partida se reiniciará.';
+        if (roleInfo) roleInfo.textContent = 'Game not found. Updating lobby.';
         cleanup();
         setTimeout(() => window.location.reload(), 2000);
     });
