@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import dotenv from "dotenv";
 import cors from "@fastify/cors";
-import jwt from "jsonwebtoken";
+import helmet from "@fastify/helmet";
 //import websocket from "@fastify/websocket";
 
 import { authMiddleware } from "./middleware/authMiddleware";
@@ -54,6 +54,14 @@ app.register(cors, {
   credentials: true,
 });
 
+app.register(helmet, {
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: true,
+  crossOriginResourcePolicy: { policy: "same-origin" },
+  referrerPolicy: { policy: "no-referrer" },
+  frameguard: { action: "deny" },
+  hidePoweredBy: true,
+});
 
 // Global hook (HTTP requests)
 // Nota: esto NO cubre el handshake WS (upgrade)
