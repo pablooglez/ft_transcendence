@@ -171,8 +171,8 @@ export function settingsHandlers(accessToken: string) {
       return;
     }
     
-    if (!newUsername.value || newUsername.value.length < 3 || newUsername.value.length > 20) {
-      errorMessage.textContent = "Username must be between 3-20 characters";
+    if (!newUsername.value || newUsername.value.length < 3 || newUsername.value.length > 10) {
+      errorMessage.textContent = "Username must be between 3-10 characters";
       errorMessage.style.display = "block";
       return;
     }
@@ -278,13 +278,13 @@ export function settingsHandlers(accessToken: string) {
       errorMessage.style.display = "block";
     }
 
-    if (newPassword.value.length < 3 || newPassword.value.length > 12) {
-      errorMessage.textContent = "Password must be between 3-12 characters";
+    if (newPassword.value.length < 6 || newPassword.value.length > 12) {
+      errorMessage.textContent = "Password must be between 6-12 characters";
       errorMessage.style.display = "block";
       return;
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[-!@#$%^&*(),.?":{}|<>])/;
     if (!passwordRegex.test(newPassword.value)) {
       errorMessage.textContent = "Password must contain at least: one lowercase, one uppercase, one number, and one special character";
       errorMessage.style.display = "block";
@@ -377,8 +377,6 @@ export function settingsHandlers(accessToken: string) {
       const data = await res.json();
       if (res.ok) {
         logoutOutsideLoginPage();
-/*         logout();
-        location.hash = "/#login"; */
       }
     }
     catch (err) {

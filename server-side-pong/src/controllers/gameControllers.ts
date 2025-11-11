@@ -78,8 +78,8 @@ export async function gameController(fastify: FastifyInstance, io: Server)
 				setIsPaused(false, roomId);
 				io.to(roomId).emit("gamePaused", { paused: false });
 			}
-		}, 1000); // 1 second delay
-		return { message: "Game will start in 1 second" };
+		}, 3000); // 3 second delay
+		return { message: "Game will start in 3 seconds" };
 	});
 
 	fastify.post("/:roomId/toggle-pause",{schema: togglePauseSchema}, async (req, reply) => {
@@ -240,5 +240,5 @@ export function resumeRoom(io: Server, roomId: string) {
 			setIsPaused(false, roomId);
 			io.to(roomId).emit("gamePaused", { paused: false });
 		}
-	}, 1000);
+	}, 3000);
 }
