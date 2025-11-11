@@ -388,26 +388,53 @@ export const advanceTournamentSchema = {
     },
   },
   response: {
-    200: tournamentSchema,
-    400: {
+    200: {
       type: "object",
       properties: {
-        error: { type: "string" },
+        tournament: {
+          type: "object",
+          properties: {
+            id: { type: "number" },
+            name: { type: "string" },
+            mode: { type: "string" },
+            creator_id: { type: ["number", "null"] },
+            max_players: { type: "number" },
+            current_round: { type: "number" },
+            status: { type: "string" },
+            winner_id: { type: ["number", "null"] },
+          },
+          required: ["id", "name", "mode", "creator_id", "max_players", "current_round", "status"],
+        },
+        matches: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "number" },
+              player1_id: { type: "number" },
+              player2_id: { type: "number" },
+              round: { type: "number" },
+              status: { type: "string" },
+            },
+            required: ["id", "player1_id", "player2_id", "round", "status"],
+          },
+        },
       },
+      required: ["tournament", "matches"],
+    },
+    400: {
+      type: "object",
+      properties: { error: { type: "string" } },
       required: ["error"],
     },
     404: {
       type: "object",
-      properties: {
-        error: { type: "string" },
-      },
+      properties: { error: { type: "string" } },
       required: ["error"],
     },
     500: {
       type: "object",
-      properties: {
-        error: { type: "string" },
-      },
+      properties: { error: { type: "string" } },
       required: ["error"],
     },
   },
