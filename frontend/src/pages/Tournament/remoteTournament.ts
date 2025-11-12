@@ -136,7 +136,6 @@ export async function loadTournamentPlayers(tournamentId: number) {
             }
         }
     } catch (err) {
-        console.error("Failed to load players:", err);
     }
 }
 
@@ -207,7 +206,6 @@ export async function showTournamentMatchesLobbyForPlayers(tournamentId: number)
             });
         }
     } catch (err) {
-        console.error("Failed to load tournament matches:", err);
     }
 }
 

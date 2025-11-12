@@ -209,13 +209,11 @@ async function startTournamentGame(isAiMode: boolean, playerLeft: string, player
 
     const canvas = document.getElementById("pongCanvas") as HTMLCanvasElement | null;
     if (!canvas) {
-        console.error("[LocalPong] Canvas not found in DOM!");
         return;
     }
 
     ctx = canvas.getContext("2d");
     if (!ctx) {
-        console.error("[LocalPong] Failed to get 2D context");
         return;
     }
 
@@ -231,7 +229,6 @@ async function startTournamentGame(isAiMode: boolean, playerLeft: string, player
     });
 
     socket.on('connect_error', (err: any) => {
-        console.error('[LocalPong] Socket connect_error', err);
     });
     socket.on('connect_timeout', (t: any) => {
         console.warn('[LocalPong] Socket connect_timeout', t);
@@ -273,7 +270,6 @@ async function startTournamentGame(isAiMode: boolean, playerLeft: string, player
             gameLoop(isAiMode);
 
         } catch (error: any) {
-            console.error("[LocalPong] Failed to start game:", error);
             const errorMsg = document.getElementById("errorMessage");
             if (errorMsg) {
                 errorMsg.textContent = error?.message || "Error al iniciar la partida";

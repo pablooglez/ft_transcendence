@@ -221,7 +221,6 @@ export async function privateRemotePongHandlers() {
         prepareGameUI();
         startGame(roomId);
     } catch (err) {
-        console.error("Error creating private room:", err);
         document.getElementById("roleInfo")!.textContent = "No se pudo crear la sala privada.";
     }
 }
@@ -270,14 +269,12 @@ async function registerMatchToPongService(winnerSide: "left" | "right", score: {
 
         const res = await postApiJson(`/game/matches`, body);
         if (!res.ok) {
-            console.error('[PrivateRemotePong] Failed to register match:', res.status, await res.text());
             return null;
         }
         const data = await res.json();
         matchRecorded = true;
         return data.matchId || null;
     } catch (err) {
-        console.error('[PrivateRemotePong] Error registering match:', err);
         return null;
     }
 }
@@ -468,9 +465,9 @@ function checkWinner() {
             registerMatchToPongService(winnerSide, { left: gameState.scores.left, right: gameState.scores.right })
                 .catch((e) => console.warn('Failed to register match', e));
 
-            sendVictoryToUserManagement().catch(err => console.error('Failed to send victory:', err));
+            sendVictoryToUserManagement().catch(() => {});
         } else {
-            sendDefeatToUserManagement().catch(err => console.error('Failed to send defeat:', err));
+            sendDefeatToUserManagement().catch(() => {});
         }
     }
 
@@ -489,11 +486,9 @@ async function sendVictoryToUserManagement() {
         if (!userId) return;
         const res = await postApiJson(`/users/addVictory`, { userId });
         if (!res.ok) {
-            console.error("Failed to post victory:", res.status, await res.text());
         } else {
         }
     } catch (err) {
-        console.error("Error sending victory:", err);
     }
 }
 
@@ -509,11 +504,9 @@ async function sendDefeatToUserManagement() {
         if (!userId) return;
         const res = await postApiJson(`/users/addDefeat`, { userId });
         if (!res.ok) {
-            console.error("Failed to post defeat:", res.status, await res.text());
         } else {
         }
     } catch (err) {
-        console.error("Error sending defeat:", err);
     }
 }
 

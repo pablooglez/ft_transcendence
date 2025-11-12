@@ -343,7 +343,6 @@ async function startGame(isAiMode: boolean) {
             await startLocalCountdownAndStart(roomId, isAiMode, btn1v1, btn1vAI);
 
         } catch (error: any) {
-            console.error("[LocalPowerUpPong] Failed to start game:", error);
             const errorMsg = document.getElementById("errorMessage");
             if (errorMsg) {
                 errorMsg.textContent = error?.message || "Error starting the game";

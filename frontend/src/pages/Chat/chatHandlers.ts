@@ -53,7 +53,6 @@ export async function chatHandlers() {
             loadConversationsAuto();
         })
         .catch(err => {
-            console.error("Failed to load blocked users on page load:", err);
             // Load conversations anyway even if blocked users fail
             loadConversationsAuto();
         });

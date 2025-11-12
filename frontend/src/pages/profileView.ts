@@ -70,7 +70,6 @@ async function resolveCurrentUsername(): Promise<string | null> {
       }
     }
   } catch (err) {
-    console.error('[profile] resolveCurrentUsername: api.getCurrentUser error', err);
   }
 
   // 2) Try /users/me directly (gateway -> user-management-service)
@@ -85,14 +84,13 @@ async function resolveCurrentUsername(): Promise<string | null> {
       return body.user.username;
     }
   } catch (err) {
-    console.error('[profile] resolveCurrentUsername: fetch /users/me error', err);
   }
 
   // 3) fallback: localStorage (if the login saved the username there)
   try {
     const stored = localStorage.getItem('username');
     if (stored) return stored;
-  } catch (err) { console.error('[profile] resolveCurrentUsername: localStorage error', err); }
+  } catch (err) { /* ignore */ }
 
   console.warn('[profile] resolveCurrentUsername: could not determine username');
   return null;
