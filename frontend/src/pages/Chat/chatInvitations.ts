@@ -3,6 +3,16 @@ import { getAccessToken } from "../../state/authState";
 
 const apiHost = `${window.location.hostname}`
 
+const friendCheckCache = new Map<number, boolean>();
+
+export function clearFriendCheckCache(userId?: number) {
+    if (userId !== undefined) {
+        friendCheckCache.delete(userId);
+    } else {
+        friendCheckCache.clear();
+    }
+}
+
 export async function acceptFriendInvitation() {
     try {
         const otherUserId = getActiveConversationId();
@@ -17,6 +27,11 @@ export async function acceptFriendInvitation() {
         if (!res.ok) {
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
+
+        if (otherUserId) {
+            clearFriendCheckCache(otherUserId);
+        }
+        
         return await res.json();
     } catch (err: any) {
     }
@@ -36,6 +51,11 @@ export async function rejectFriendInvitation() {
         if (!res.ok) {
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
+
+        if (otherUserId) {
+            clearFriendCheckCache(otherUserId);
+        }
+        
         return await res.json();
     } catch (err: any) {
     }
@@ -44,6 +64,14 @@ export async function rejectFriendInvitation() {
 export async function checkAlreadyFriend() {
     try {
         const otherUserId = getActiveConversationId();
+        
+        if (!otherUserId) {
+            return false;
+        }
+
+        if (friendCheckCache.has(otherUserId)) {
+            return friendCheckCache.get(otherUserId)!;
+        }
 
         const token = getAccessToken();
         const res = await fetch(`https://${apiHost}:8443/api/users/checkFriend`, {
@@ -57,12 +85,15 @@ export async function checkAlreadyFriend() {
         if (!res.ok) {
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
-        const friend = await res.json();
-        if (friend.friend_id)
-            return true;
-        else
-            return false;
+        const data = await res.json();
+        const isFriend = data.isFriend || false;
+        
+        // Cache the result
+        friendCheckCache.set(otherUserId, isFriend);
+        
+        return isFriend;
     } catch (err) {
+        return false;
     }
 }
 
@@ -80,6 +111,11 @@ export async function sendFriendInvitation() {
         if (!res.ok) {
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
+
+        if (otherUserId) {
+            clearFriendCheckCache(otherUserId);
+        }
+        
         return await res.json();
     } catch (err) {
     }
