@@ -198,8 +198,6 @@ function updateActiveContactStatus() {
                 contactStatus.textContent = 'Offline';
                 contactStatus.style.color = '#ff4444';
             }
-        } else {
         }
-    } else {
     }
 }

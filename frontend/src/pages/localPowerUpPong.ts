@@ -10,6 +10,8 @@ let ctx: CanvasRenderingContext2D | null = null;
 let animationFrameId: number;
 let endGameTimeoutId: number | undefined;
 let isGameRunning = false;
+let currentRoomId: string | null = null; // Generate fresh room ID for each game
+
 // Unique room id for multiple concurrent local games
 function simpleUUID() {
     return (
@@ -48,7 +50,6 @@ async function startLocalCountdownAndStart(roomToStart: string, isAiMode: boolea
     // Start the animation loop
     gameLoop(isAiMode);
 }
-const roomId = `local_${simpleUUID()}`;
 
 const apiHost = `https://${window.location.hostname}:8443/api`;
 
@@ -162,6 +163,7 @@ function cleanup() {
     isGameRunning = false;
     keysPressed.clear();
     ctx = null;
+    currentRoomId = null; // Clear room ID for next game
     // Hide winner and error
     const winnerMsg = document.getElementById("winnerMessage");
     if (winnerMsg) winnerMsg.style.display = "none";
@@ -251,19 +253,20 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 function togglePause() {
-    postGame(`/game/${roomId}/toggle-pause`);
+    if (!currentRoomId) return;
+    postGame(`/game/${currentRoomId}/toggle-pause`);
 }
 
 const handleKeyUp = (e: KeyboardEvent) => keysPressed.delete(e.key);
 
 function gameLoop(isAiMode: boolean) {
-    if (isGameRunning && socket) {
-        if (keysPressed.has("w")) socket.emit("moveUp", "left", roomId);
-        if (keysPressed.has("s")) socket.emit("moveDown", "left", roomId);
+    if (isGameRunning && socket && currentRoomId) {
+        if (keysPressed.has("w")) socket.emit("moveUp", "left", currentRoomId);
+        if (keysPressed.has("s")) socket.emit("moveDown", "left", currentRoomId);
 
         if (!isAiMode) {
-            if (keysPressed.has("ArrowUp")) socket.emit("moveUp", "right", roomId);
-            if (keysPressed.has("ArrowDown")) socket.emit("moveDown", "right", roomId);
+            if (keysPressed.has("ArrowUp")) socket.emit("moveUp", "right", currentRoomId);
+            if (keysPressed.has("ArrowDown")) socket.emit("moveDown", "right", currentRoomId);
         }
     }
     animationFrameId = requestAnimationFrame(() => gameLoop(isAiMode));
@@ -294,64 +297,38 @@ async function startGame(isAiMode: boolean) {
     if (btn1v1) btn1v1.disabled = true;
     if (btn1vAI) btn1vAI.disabled = true;
 
+    // Generate a fresh room ID for this game
+    currentRoomId = `local_${simpleUUID()}`;
+
     ctx = (document.getElementById("pongCanvas") as HTMLCanvasElement).getContext("2d")!;
-    if (socket) {
-        // If there’s a previous socket, clean it up
-        cleanup();
-    }
-    const wsHost = apiHost.replace(/\/api\/?$/i, '');
+    
+    const wsHost = apiHost.replace(/\/api\/?$/i, '');    
     socket = io(wsHost, {
         path: "/socket.io",
         transports: ['websocket'],
         auth: {
             token: "local"
-        }
+        },
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
     });
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
-    socket!.on('connect', async () => {
-        socket!.emit("joinRoom", { roomId });
-
-        try {
-            // Always stop AI first to ensure a clean state
-            await postGame(`/game/${roomId}/stop-ai`);
-
-            const initResponse = await postGame(`/game/${roomId}/init`);
-            if (!initResponse.ok) {
-                throw new Error(`init failed (${initResponse.status})`);
-            }
-            // Apply speeds (if any) after initializing the game for this room (init resets state)
-            await applySpeedsToRoom(roomId);
-
-            // Enable powerup for this local room (speed increases on paddle hit)
-            try {
-                await postGame(`/game/${roomId}/powerup?enabled=true&random=true`);
-            } catch (e) {
-                console.warn('[LocalPowerUpPong] Failed to enable powerup for room', roomId, e);
-            }
-
-            // If playing vs AI, request the backend to start the AI opponent
-            if (isAiMode) {
-                const startAiResponse = await postGame(`/game/${roomId}/start-ai`);
-                if (!startAiResponse.ok) {
-                    throw new Error(`start-ai failed (${startAiResponse.status})`);
-                }
-            }
-            // The game starts paused by default after init. Use a 3-2-1 countdown then resume.
-            await startLocalCountdownAndStart(roomId, isAiMode, btn1v1, btn1vAI);
-
-        } catch (error: any) {
-            const errorMsg = document.getElementById("errorMessage");
-            if (errorMsg) {
-                errorMsg.textContent = error?.message || "Error starting the game";
-                errorMsg.style.display = "block";
-            }
-            // Re-enable buttons to retry
-            if (btn1v1) btn1v1.disabled = false;
-            if (btn1vAI) btn1vAI.disabled = false;
+    // Register all socket event handlers BEFORE the socket connects
+    socket!.on('connect_error', (error: Error) => {
+        console.error('[LocalPowerUpPong] Socket connection error:', error);
+        const errorMsg = document.getElementById("errorMessage");
+        if (errorMsg) {
+            errorMsg.textContent = `Connection error: ${error.message}. Please check your connection.`;
+            errorMsg.style.display = "block";
         }
+    });
+
+    socket!.on('error', (error: Error) => {
+        console.error('[LocalPowerUpPong] Socket error:', error);
     });
 
     socket!.on("gameState", (state: GameState) => {
@@ -393,22 +370,62 @@ async function startGame(isAiMode: boolean) {
         setTimeout(() => window.location.reload(), 2000);
     });
 
-    // Automatic reconnection handling: reset the UI if socket.io reconnects
-    if (typeof window !== 'undefined') {
-        window.addEventListener('DOMContentLoaded', () => {
-            if (socket) {
-                socket.on('reconnect', () => {
-                    const errorMsg = document.getElementById("errorMessage");
-                    if (errorMsg) {
-                        errorMsg.textContent = 'Reconnecting to the server. The game will restart.';
-                        errorMsg.style.display = "block";
-                    }
-                    cleanup();
-                    setTimeout(() => window.location.reload(), 2000);
-                });
+    socket!.on('reconnect', () => {
+        const errorMsg = document.getElementById("errorMessage");
+        if (errorMsg) {
+            errorMsg.textContent = 'Reconnecting to the server. The game will restart.';
+            errorMsg.style.display = "block";
+        }
+        cleanup();
+        setTimeout(() => window.location.reload(), 2000);
+    });
+
+    socket!.on('connect', async () => {
+        if (!currentRoomId) {
+            return;
+        }
+        
+        socket!.emit("joinRoom", { roomId: currentRoomId });
+
+        try {
+            // Always stop AI first to ensure a clean state
+            await postGame(`/game/${currentRoomId}/stop-ai`);
+
+            const initResponse = await postGame(`/game/${currentRoomId}/init`);
+            if (!initResponse.ok) {
+                throw new Error(`init failed (${initResponse.status})`);
             }
-        });
-    }
+            // Apply speeds (if any) after initializing the game for this room (init resets state)
+            await applySpeedsToRoom(currentRoomId);
+
+            // Enable powerup for this local room (speed increases on paddle hit)
+            try {
+                await postGame(`/game/${currentRoomId}/powerup?enabled=true&random=true`);
+            } catch (e) {
+                console.warn('[LocalPowerUpPong] Failed to enable powerup for room', currentRoomId, e);
+            }
+
+            // If playing vs AI, request the backend to start the AI opponent
+            if (isAiMode) {
+                const startAiResponse = await postGame(`/game/${currentRoomId}/start-ai`);
+                if (!startAiResponse.ok) {
+                    throw new Error(`start-ai failed (${startAiResponse.status})`);
+                }
+            }
+            // The game starts paused by default after init. Use a 3-2-1 countdown then resume.
+            await startLocalCountdownAndStart(currentRoomId, isAiMode, btn1v1, btn1vAI);
+
+        } catch (error: any) {
+            const errorMsg = document.getElementById("errorMessage");
+            if (errorMsg) {
+                errorMsg.textContent = error?.message || "Error starting the game";
+                errorMsg.style.display = "block";
+            }
+            // Re-enable buttons to retry
+            if (btn1v1) btn1v1.disabled = false;
+            if (btn1vAI) btn1vAI.disabled = false;
+        }
+    });
 }
 
 function checkWinner() {
