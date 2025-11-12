@@ -101,8 +101,10 @@ export async function startRemoteTournament(tournamentId: number) {
     const player1 = players[i];
     const player2 = players[i + 1];
 
-    const matchId = TournamentRepository.addRemoteMatch(tournamentId, 1, player1.user_id, player2.user_id, null);
+    // Persist match using internal player ids (players.id) so DB foreign keys remain consistent
+    const matchId = TournamentRepository.addRemoteMatch(tournamentId, 1, player1.id, player2.id, null);
 
+    // But return player1_id/player2_id as account user_id for frontend convenience/authorization
     matches.push({
       id: matchId,
       player1_id: player1.user_id,
@@ -126,7 +128,8 @@ export async function startRemoteTournament(tournamentId: number) {
       status: "in_progress",
       current_round: 1,
     },
-    players: players.map((p: any) => ({ id: p.id, username: p.username })),
+    // For remote tournaments the frontend expects player ids to be the account user_id
+    players: players.map((p: any) => ({ id: p.user_id, username: p.username })),
     matches,
   };
 }
@@ -198,9 +201,18 @@ export async function advanceRemoteTournamentRound(tournamentId: number, winners
     const player2 = winners[i + 1];
     if (!player2) break;
 
-    // create remote match placeholder with null roomId
-    const matchId = TournamentRepository.addRemoteMatch(tournamentId, nextRound, player1.id, player2.id, null);
+    // winners[] contains account user_id in .id; find internal player rows for DB FK
+    const p1Row = PlayerRepository.getByUserAndTournament(player1.id, tournamentId);
+    const p2Row = PlayerRepository.getByUserAndTournament(player2.id, tournamentId);
+    if (!p1Row || !p2Row) {
+      console.warn(`[REMOTE] Could not find player rows for winners ${player1.id} / ${player2.id} in tournament ${tournamentId}, skipping pair.`);
+      continue;
+    }
 
+    // create remote match placeholder with null roomId using internal player ids
+    const matchId = TournamentRepository.addRemoteMatch(tournamentId, nextRound, p1Row.id, p2Row.id, null);
+
+    // Return matches list using account user ids for frontend
     matches.push({
       id: matchId,
       player1_id: player1.id,

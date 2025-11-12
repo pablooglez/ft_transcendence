@@ -152,7 +152,10 @@ export class TournamentRepository {
 
     static getMatchesByTournamentId(tournamentId: number) {
         const stmt = db.prepare(`
-            SELECT m.*, p1.username as player1_username, p2.username as player2_username
+            SELECT m.*, 
+                   p1.username as player1_username, p2.username as player2_username,
+                   p1.user_id as player1_id, p2.user_id as player2_id,
+                   p1.id as player1_internal_id, p2.id as player2_internal_id
             FROM matches m
             LEFT JOIN players p1 ON m.player1_id = p1.id
             LEFT JOIN players p2 ON m.player2_id = p2.id
@@ -164,7 +167,10 @@ export class TournamentRepository {
 
     static getMatchById(matchId: number) {
         const stmt = db.prepare(`
-            SELECT m.*, p1.username as player1_username, p2.username as player2_username
+            SELECT m.*, 
+                   p1.username as player1_username, p2.username as player2_username,
+                   p1.user_id as player1_id, p2.user_id as player2_id,
+                   p1.id as player1_internal_id, p2.id as player2_internal_id
             FROM matches m
             LEFT JOIN players p1 ON m.player1_id = p1.id
             LEFT JOIN players p2 ON m.player2_id = p2.id
