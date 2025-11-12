@@ -20,12 +20,16 @@ import { getUserIdFromToken } from "./state/authState";
 let wsInitialized = false;
 
 function initializeWebSocketPresence() {
-    if (wsInitialized) return;
+    if (wsInitialized) {
+        return;
+    }
     
     const accessToken = getAccessToken();
     const userId = getUserIdFromToken();
     
-    if (!accessToken || !userId) return;
+    if (!accessToken || !userId) {
+        return;
+    }
     
     // Connect to WebSocket
     websocketClient.connect(userId).then(() => {
