@@ -50,7 +50,7 @@ Jeandrad and Pablogon are from this piscine. Like the October piscine, they star
             We can see it in our student cards, but also feel it in ourselves.
           </p>
           <p>
-            Together, the four of us have logged over 10,000 hours coding on 42's computers.
+            Together, the four of us have logged over 11,500 hours coding on 42's computers.
           </p>
       </div>
       </div>
