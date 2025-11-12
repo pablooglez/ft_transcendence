@@ -4,6 +4,7 @@
  */
 import { io, Socket } from "socket.io-client";
 import { getAccessToken, refreshAccessToken, getUserIdFromToken } from "../state/authState";
+import { runCountdown } from "../utils/countdown";
 
 let socket: Socket;
 let ctx: CanvasRenderingContext2D | null = null;
@@ -497,10 +498,8 @@ function startGame(roomIdToJoin: string) {
 
     socket.on("gameStarting", () => {
         // Start countdown for all players when game is about to start
-        import("../utils/countdown").then(mod => {
-            mod.runCountdown('countdown', 1).then(() => {
-                // Game will start automatically after countdown
-            });
+        runCountdown('countdown', 3).then(() => {
+            // Game will start automatically after countdown
         });
     });
 

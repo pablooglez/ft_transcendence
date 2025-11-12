@@ -64,12 +64,21 @@ export async function gameController(fastify: FastifyInstance, io: Server)
 			return reply.code(400).send({ message: "Cannot resume, waiting for opponent." });
 		}
 		if (isGameEnded(roomId)) return { message: "Game has ended" };
-		// delay to start the game
-		io.to(roomId).emit("gameStarting");
+		
+		// For remote games, emit gameStarting and delay to allow countdown
+		const isLocalGame = roomId.startsWith('local_') || roomId === 'local';
+		
+		if (!isLocalGame) {
+			io.to(roomId).emit("gameStarting");
+		}
+		
+		// Delay for remote games to match frontend countdown, no delay for local
+		const delay = isLocalGame ? 0 : 3000;
+		
 		setTimeout(() => {
-			// player check for disconnections
+			// player check for disconnections (only for remote games)
 			const currentRoom = getRoom(roomId);
-			if (!roomId.startsWith('local_') && roomId !== 'local' && (!currentRoom || currentRoom.players.length < 2)) {
+			if (!isLocalGame && (!currentRoom || currentRoom.players.length < 2)) {
 				console.log(`[RESUME-DELAY] Start aborted for room ${roomId}, an opponent disconnected.`);
 				return;
 			}
@@ -78,8 +87,9 @@ export async function gameController(fastify: FastifyInstance, io: Server)
 				setIsPaused(false, roomId);
 				io.to(roomId).emit("gamePaused", { paused: false });
 			}
-		}, 3000); // 3 second delay
-		return { message: "Game will start in 3 seconds" };
+		}, delay);
+		
+		return { message: isLocalGame ? "Game started" : "Game starting in 3 seconds" };
 	});
 
 	fastify.post("/:roomId/toggle-pause",{schema: togglePauseSchema}, async (req, reply) => {
@@ -224,13 +234,20 @@ export function resumeRoom(io: Server, roomId: string) {
 		resetGame(roomId);
 	}
 
-	// Notify clients that game is about to start
-	io.to(roomId).emit("gameStarting");
+	// For remote games, emit gameStarting and delay to allow countdown
+	const isLocalGame = roomId.startsWith('local_') || roomId === 'local';
+	
+	if (!isLocalGame) {
+		io.to(roomId).emit("gameStarting");
+	}
+	
+	// Delay for remote games to match frontend countdown, no delay for local
+	const delay = isLocalGame ? 0 : 3000;
 
 	setTimeout(() => {
-		// Re-check players before actually starting
+		// Re-check players before actually starting (only for remote games)
 		const currentRoom = getRoom(roomId);
-		if (!roomId.startsWith('local_') && roomId !== 'local' && (!currentRoom || currentRoom.players.length < 2)) {
+		if (!isLocalGame && (!currentRoom || currentRoom.players.length < 2)) {
 			console.log(`[RESUME-DELAY] Start aborted for room ${roomId}, an opponent disconnected.`);
 			return;
 		}
@@ -240,5 +257,5 @@ export function resumeRoom(io: Server, roomId: string) {
 			setIsPaused(false, roomId);
 			io.to(roomId).emit("gamePaused", { paused: false });
 		}
-	}, 3000);
+	}, delay); // Delay: 0 for local, 3000 for remote (matches frontend countdown)
 }
